@@ -26,17 +26,6 @@
     var searchInput = document.getElementById("search-input");
     var filtersEl = document.getElementById("cat-filters");
 
-    // --- Admin-only dashboard link ---
-    // The register itself is identical for every role; only an admin gets
-    // their way back to the management dashboard.
-    document.querySelectorAll(".pos-admin-link").forEach(function (link) {
-        if (role === "admin") {
-            link.style.display = "";
-        } else {
-            link.remove();
-        }
-    });
-
     function handleAuthError(err) {
         if (err && err.status === 401) {
             sessionStorage.removeItem("luna_user");
@@ -346,12 +335,22 @@
     }
 
     async function init() {
+        var me;
         try {
-            await Api.me();
+            me = await Api.me();
         } catch (err) {
             sessionStorage.removeItem("luna_user");
             window.location.href = "login.html";
             return;
+        }
+
+        role = me.user.role;
+        sessionStorage.setItem("luna_user", role);
+        sessionStorage.setItem("luna_name", me.user.username);
+
+        var roleLabel = document.getElementById("role-label");
+        if (roleLabel) {
+            roleLabel.textContent = role === "admin" ? "Admin" : "Cashier";
         }
 
         try {

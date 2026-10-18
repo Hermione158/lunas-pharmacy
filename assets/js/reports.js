@@ -4,29 +4,11 @@
     var role = sessionStorage.getItem("luna_user");
 
     // --- Access guard: sales reports are admin only ---
+    // The role is confirmed against the server in bootstrap() below.
     if (!role) {
         window.location.href = "login.html";
         return;
     }
-    if (role !== "admin") {
-        window.location.href = "pos.html";
-        return;
-    }
-
-    // --- Show the signed-in role ---
-    var roleLabel = document.getElementById("role-label");
-    if (roleLabel) {
-        roleLabel.textContent = role === "admin" ? "Administrator" : "Cashier";
-    }
-
-    // --- Admin-only nav link ---
-    document.querySelectorAll(".inv-admin-link").forEach(function (link) {
-        if (role === "admin") {
-            link.style.display = "";
-        } else {
-            link.remove();
-        }
-    });
 
     // --- Logout ---
     document.querySelectorAll(".inv-logout").forEach(function (btn) {
@@ -246,5 +228,41 @@
         });
     }
 
-    render();
+    function revealChrome() {
+        // --- Show the signed-in role ---
+        var roleLabel = document.getElementById("role-label");
+        if (roleLabel) {
+            roleLabel.textContent = "Administrator";
+        }
+
+        // --- Admin-only nav link ---
+        document.querySelectorAll(".inv-admin-link").forEach(function (link) {
+            link.style.display = "";
+        });
+    }
+
+    async function bootstrap() {
+        var me;
+        try {
+            me = await Api.me();
+        } catch (err) {
+            sessionStorage.removeItem("luna_user");
+            window.location.href = "login.html";
+            return;
+        }
+
+        role = me.user.role;
+        sessionStorage.setItem("luna_user", role);
+        sessionStorage.setItem("luna_name", me.user.username);
+
+        if (role !== "admin") {
+            window.location.href = "pos.html";
+            return;
+        }
+
+        revealChrome();
+        render();
+    }
+
+    bootstrap();
 })();

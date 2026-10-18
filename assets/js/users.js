@@ -4,18 +4,10 @@
     var role = sessionStorage.getItem("luna_user");
 
     // --- Access guard: accounts are admin only ---
+    // The role is confirmed against the server in bootstrap() below.
     if (!role) {
         window.location.href = "login.html";
         return;
-    }
-    if (role !== "admin") {
-        window.location.href = "inventory.html";
-        return;
-    }
-
-    var roleLabel = document.getElementById("role-label");
-    if (roleLabel) {
-        roleLabel.textContent = "Administrator";
     }
 
     // --- Logout ---
@@ -142,16 +134,36 @@
         }
     });
 
-    async function init() {
+    function revealChrome() {
+        var roleLabel = document.getElementById("role-label");
+        if (roleLabel) {
+            roleLabel.textContent = "Administrator";
+        }
+    }
+
+    async function bootstrap() {
+        var me;
         try {
-            await Api.me();
+            me = await Api.me();
         } catch (err) {
             sessionStorage.removeItem("luna_user");
             window.location.href = "login.html";
             return;
         }
+
+        role = me.user.role;
+        sessionStorage.setItem("luna_user", role);
+        sessionStorage.setItem("luna_name", me.user.username);
+
+        if (role !== "admin") {
+            window.location.href = "inventory.html";
+            return;
+        }
+
+        revealChrome();
+        currentUserId = me.user.id;
         await load();
     }
 
-    init();
+    bootstrap();
 })();
