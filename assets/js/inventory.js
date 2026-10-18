@@ -4,13 +4,13 @@
     var page = document.body.getAttribute("data-page") || "inventory";
     var role = sessionStorage.getItem("luna_user");
 
-    // --- Access guard ---
+    // --- Access guard: the whole inventory area is admin only ---
     if (!role) {
         window.location.href = "login.html";
         return;
     }
-    if (page === "inventory-edit" && role !== "admin") {
-        window.location.href = "inventory.html";
+    if (role !== "admin") {
+        window.location.href = "pos.html";
         return;
     }
 
