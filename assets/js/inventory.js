@@ -307,7 +307,13 @@
             try {
                 var res = await Api.saveProducts(items);
                 await reload();
-                flash("Saved " + res.saved + " item(s)" + (res.added ? ", added " + res.added : "") + ".");
+                if (!res.saved) {
+                    flash(res.unchanged ? "Nothing changed - " + res.unchanged + " item(s) are already up to date." : "There was nothing to save.");
+                } else {
+                    flash("Saved " + res.saved + " item(s)" +
+                        (res.added ? ", added " + res.added : "") +
+                        (res.unchanged ? ", " + res.unchanged + " already up to date" : "") + ".");
+                }
             } catch (err) {
                 if (!handleAuthError(err)) flash(err.message);
             } finally {
