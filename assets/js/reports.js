@@ -40,6 +40,16 @@
 
     var currency = Api.currency;
     var currentRange = "all";
+    var lastStats = null;
+
+    // --- Status message next to the buttons that produce it ---
+    var hint = document.getElementById("rep-hint");
+    function flash(message) {
+        if (!hint) return;
+        hint.textContent = message;
+        clearTimeout(flash._t);
+        flash._t = setTimeout(function () { hint.textContent = ""; }, 2500);
+    }
 
     var RANGE_TEXT = {
         today: "Today",
@@ -124,12 +134,14 @@
         try {
             stats = await Api.getStats(currentRange);
         } catch (err) {
+            lastStats = null;
             if (!handleAuthError(err)) {
                 document.getElementById("range-label").textContent = "Could not load reports. " + err.message;
             }
             return;
         }
 
+        lastStats = stats;
         renderTotals(stats);
         renderTop(stats);
         renderTransactions(stats);
@@ -144,6 +156,80 @@
             render();
         });
     });
+
+    // --- Export the report on screen to a CSV file ---
+    var exportBtn = document.getElementById("rep-export-btn");
+    if (exportBtn) {
+        function csvCell(value) {
+            var text = String(value === undefined || value === null ? "" : value);
+            return /[",\n\r]/.test(text) ? '"' + text.replace(/"/g, '""') + '"' : text;
+        }
+
+        function money(n) {
+            return Api.round2(n).toFixed(2);
+        }
+
+        exportBtn.addEventListener("click", function () {
+            if (!lastStats || (!lastStats.sales.length && !lastStats.top.length)) {
+                flash("There is nothing to export.");
+                return;
+            }
+
+            var stats = lastStats;
+            var lines = [];
+
+            // --- Section 1: the summary tiles ---
+            lines.push(["Luna's Pharmacy - Sales Report"].map(csvCell).join(","));
+            lines.push(["Range", RANGE_TEXT[currentRange]].map(csvCell).join(","));
+            lines.push(["Exported", new Date().toISOString()].map(csvCell).join(","));
+            lines.push(["Gross Sales", "Discounts", "Net Sales", "Transactions", "Items Sold", "Average Sale"].map(csvCell).join(","));
+            lines.push([money(stats.gross), money(stats.discount), money(stats.net), stats.transactions, stats.units, money(stats.average)].map(csvCell).join(","));
+            lines.push("");
+
+            // --- Section 2: most sold items ---
+            lines.push(["Most Sold Items"].map(csvCell).join(","));
+            lines.push(["Rank", "Item", "Qty Sold", "Revenue"].map(csvCell).join(","));
+            if (stats.top.length) {
+                stats.top.forEach(function (item, i) {
+                    lines.push([i + 1, csvCell(item.name), item.qty, money(item.revenue)].join(","));
+                });
+            } else {
+                lines.push(["-", "No sales recorded in this period.", "", ""].join(","));
+            }
+            lines.push("");
+
+            // --- Section 3: the transactions ---
+            lines.push(["Transactions"].map(csvCell).join(","));
+            lines.push(["Sale No.", "Date", "Cashier", "Items", "Gross", "Discount", "Net"].map(csvCell).join(","));
+            if (stats.sales.length) {
+                stats.sales.forEach(function (sale) {
+                    lines.push([
+                        csvCell(sale.txNo),
+                        csvCell(sale.date),
+                        csvCell(sale.cashier),
+                        sale.units,
+                        money(sale.gross),
+                        money(sale.discount),
+                        money(sale.net)
+                    ].join(","));
+                });
+            } else {
+                lines.push(["-", "", "", "", "No transactions in this period.", "", ""].join(","));
+            }
+
+            // The BOM keeps Excel from mangling accented characters.
+            var blob = new Blob(["\ufeff" + lines.join("\r\n")], { type: "text/csv;charset=utf-8" });
+            var url = URL.createObjectURL(blob);
+            var link = document.createElement("a");
+            link.href = url;
+            link.download = "sales-report-" + currentRange + "-" + new Date().toISOString().slice(0, 10) + ".csv";
+            document.body.appendChild(link);
+            link.click();
+            URL.revokeObjectURL(url);
+
+            flash("Exported " + stats.sales.length + " transaction(s) for " + RANGE_TEXT[currentRange].toLowerCase() + ".");
+        });
+    }
 
     render();
 })();
