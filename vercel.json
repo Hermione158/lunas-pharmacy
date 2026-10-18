@@ -3,7 +3,7 @@
     "rewrites": [
         {
             "source": "/api/:path*",
-            "destination": "https://luna-pharmacy-api.onrender.com/api/:path*"
+            "destination": "https://lunas-pharmacy.onrender.com/api/:path*"
         }
     ],
     "headers": [
