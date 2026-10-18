@@ -82,6 +82,9 @@
         deleteProduct: function (id) {
             return request("/api/products/" + id, { method: "DELETE" });
         },
+        saveProducts: function (items) {
+            return request("/api/products/bulk", { method: "POST", body: { items: items } });
+        },
         importSampleCatalog: function () {
             return request("/api/products/import", { method: "POST" });
         },

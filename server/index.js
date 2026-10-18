@@ -34,9 +34,10 @@ const FIXED_ROUTES = {
     "/api/users": "users.js"
 };
 
-// Parameterised routes, checked in this order (import wins over the :id route).
+// Parameterised routes, checked in this order (import and bulk win over :id).
 const PARAM_ROUTES = [
     { pattern: /^\/api\/products\/import$/, file: "products/import.js", key: null },
+    { pattern: /^\/api\/products\/bulk$/, file: "products/bulk.js", key: null },
     { pattern: /^\/api\/products\/([^/]+)$/, file: "products/[id].js", key: "id" },
     { pattern: /^\/api\/users\/([^/]+)$/, file: "users/[id].js", key: "id" }
 ];

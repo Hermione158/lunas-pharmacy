@@ -124,7 +124,7 @@
         } else {
             tbody.innerHTML = products.map(function (p) {
                 var st = Api.statusFor(p.stock);
-                return '<tr data-cat="' + esc(p.category) + '">' +
+                return '<tr data-id="' + p.id + '" data-cat="' + esc(p.category) + '">' +
                     "<td>" + itemCell(p) + "</td>" +
                     "<td>" + esc(p.category) + "</td>" +
                     "<td>" + currency(p.price) + "</td>" +
@@ -279,40 +279,41 @@
     }
 
     // --- Save All ---
+    // One request for the whole table: the old version sent a request per row,
+    // which looked frozen with a full catalog and could stop halfway through.
     var saveAllBtn = document.getElementById("save-all-btn");
     if (saveAllBtn && table) {
         saveAllBtn.addEventListener("click", async function () {
-            var updated = 0, added = 0, skipped = 0;
+            var rows = Array.prototype.slice.call(table.querySelectorAll("tbody tr"));
+            var items = [];
 
-            for (const row of table.querySelectorAll("tbody tr")) {
+            for (const row of rows) {
                 var data = readRow(row);
                 var isNew = row.getAttribute("data-new") === "1";
-                var id = isNew ? null : Number(row.getAttribute("data-id"));
-
-                if (isNew && !data.name) { skipped++; continue; }
-                if (!isNew && !id) { skipped++; continue; }
-
-                try {
-                    if (isNew) {
-                        await Api.addProduct({ name: data.name, category: data.category, price: data.price, stock: data.stock, image: "" });
-                        added++;
-                    } else {
-                        await Api.updateProduct(id, data);
-                        updated++;
-                    }
-                } catch (err) {
-                    if (handleAuthError(err)) return;
-                    skipped++;
-                }
+                if (isNew && !data.name) continue; // blank new row: nothing to save
+                items.push({ id: isNew ? null : Number(row.getAttribute("data-id")), name: data.name, category: data.category, price: data.price, stock: data.stock });
             }
+
+            if (!items.length) {
+                flash("There is nothing to save.");
+                return;
+            }
+
+            var label = saveAllBtn.textContent;
+            saveAllBtn.disabled = true;
+            saveAllBtn.textContent = "Saving...";
+            flash("Saving " + items.length + " item(s)...");
 
             try {
+                var res = await Api.saveProducts(items);
                 await reload();
+                flash("Saved " + res.saved + " item(s)" + (res.added ? ", added " + res.added : "") + ".");
             } catch (err) {
-                handleAuthError(err);
+                if (!handleAuthError(err)) flash(err.message);
+            } finally {
+                saveAllBtn.disabled = false;
+                saveAllBtn.textContent = label;
             }
-            flash("Saved " + updated + " item(s)" + (added ? ", added " + added : "") +
-                (skipped ? ", skipped " + skipped : "") + ".");
         });
     }
 
@@ -365,6 +366,59 @@
                 importBtn.disabled = false;
                 importBtn.textContent = label;
             }
+        });
+    }
+
+    // --- Export the rows on screen to a CSV file ---
+    var exportBtn = document.getElementById("export-btn");
+    if (exportBtn && table) {
+        function csvCell(value) {
+            var text = String(value === undefined || value === null ? "" : value);
+            return /[",\n\r]/.test(text) ? '"' + text.replace(/"/g, '""') + '"' : text;
+        }
+
+        exportBtn.addEventListener("click", function () {
+            // Only the rows the search box and category chip left visible.
+            var rows = Array.prototype.slice.call(table.querySelectorAll("tbody tr"))
+                .filter(function (row) { return row.style.display !== "none"; });
+
+            if (!rows.length) {
+                flash("There is nothing to export.");
+                return;
+            }
+
+            var lines = ["Item,Category,Price,Stock,Status"];
+
+            for (const row of rows) {
+                // Values come from the loaded products, so this works on both the
+                // read-only table (plain text cells) and the edit table (inputs).
+                var item = null;
+                var id = Number(row.getAttribute("data-id"));
+                if (id) {
+                    item = products.filter(function (p) { return p.id === id; })[0] || null;
+                }
+                var badge = row.querySelector(".badge");
+                lines.push([
+                    csvCell(item ? item.name : row.textContent),
+                    csvCell(item ? item.category : row.getAttribute("data-cat")),
+                    csvCell(item ? Api.round2(item.price).toFixed(2) : ""),
+                    csvCell(item ? item.stock : ""),
+                    csvCell(badge ? badge.textContent.trim() : "")
+                ].join(","));
+            }
+
+            // The BOM keeps Excel from mangling accented characters.
+            var blob = new Blob(["\ufeff" + lines.join("\r\n")], { type: "text/csv;charset=utf-8" });
+            var url = URL.createObjectURL(blob);
+            var link = document.createElement("a");
+            link.href = url;
+            link.download = "inventory-" + new Date().toISOString().slice(0, 10) + ".csv";
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+
+            flash("Exported " + rows.length + " item(s).");
         });
     }
 
