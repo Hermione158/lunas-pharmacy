@@ -29,7 +29,9 @@ function isSame(existing, item) {
     return existing.name === item.name &&
         existing.category === item.category &&
         samePrice(existing.price, item.price) &&
-        Number(existing.stock) === Number(item.stock);
+        Number(existing.stock) === Number(item.stock) &&
+        // The form never sends an image, so only compare it when one was given.
+        (!item.image || existing.image === item.image);
 }
 
 // Same rules as products.js (create): the image is only ever set when the caller
