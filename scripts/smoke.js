@@ -144,13 +144,15 @@ async function runAdminFlow(admin) {
         check("admin can update a product", res.status === 200 && res.data.product.price === 12.5 && res.data.product.stock === 8,
             res.data && res.data.product);
 
-        res = await admin("/api/products/" + temp.id, { method: "DELETE" });
-        check("admin can delete an unsold product", res.status === 200, res.data);
-
+        // The duplicate name has to be tried while temp still exists, so this
+        // check runs before the delete below.
         res = await admin("/api/products", { method: "POST", body: { name: username, category: "Test", price: 1, stock: 1 } });
         const duplicate = res.status;
         if (res.status === 201) await admin("/api/products/" + res.data.product.id, { method: "DELETE" });
         check("duplicate names are rejected", duplicate === 409, duplicate);
+
+        res = await admin("/api/products/" + temp.id, { method: "DELETE" });
+        check("admin can delete an unsold product", res.status === 200, res.data);
     }
 
     // account management
