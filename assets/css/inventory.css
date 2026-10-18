@@ -438,16 +438,8 @@ body {
     opacity: 1;
 }
 
-/* Footer bar */
-.inv-foot {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 12px;
-}
-
-.inv-foot .hint {
+/* Status message shown next to the buttons that produce it. */
+.hint {
     color: #7a5c72;
     font-size: 13px;
     font-weight: 600;
