@@ -3,7 +3,7 @@
 "use strict";
 
 const { getPool } = require("./_lib/db");
-const { requireAuth } = require("./_lib/auth");
+const { requireAuth, requireAdmin } = require("./_lib/auth");
 const { send, readBody, serverError, round2, txNo } = require("./_lib/util");
 
 const RANGES = ["today", "week", "month", "all"];
@@ -50,7 +50,7 @@ async function listSales(req, res) {
     );
 
     const [rows] = await pool.query(
-        "SELECT s.id, s.gross, s.discount, s.net, s.created_at, u.username, " +
+        "SELECT s.id, s.gross, s.discount, s.net, s.discount_pct, s.created_at, u.username, " +
         "(SELECT COALESCE(SUM(si.qty), 0) FROM sale_items si WHERE si.sale_id = s.id) AS units " +
         "FROM sales s JOIN users u ON u.id = s.user_id " + where + " ORDER BY s.id DESC LIMIT 200",
         params
@@ -79,6 +79,7 @@ async function listSales(req, res) {
                 units: Number(r.units),
                 gross: round2(Number(r.gross)),
                 discount: round2(Number(r.discount)),
+                discountPct: round2(Number(r.discount_pct) || 0),
                 net: round2(Number(r.net))
             };
         })
@@ -139,13 +140,27 @@ async function createSale(req, res, session) {
         }
 
         gross = round2(gross);
-        let discount = round2(Math.max(0, Number(body.discount) || 0));
+
+        // The cashier enters a percentage; the peso amount is derived here so the
+        // server stays the one deciding what the customer pays. An older cached
+        // page can still send a flat amount, which is honoured as-is.
+        let discountPct = Number(body.discountPct);
+        let discount;
+        if (body.discountPct === undefined || body.discountPct === null || isNaN(discountPct)) {
+            discountPct = 0;
+            discount = round2(Math.max(0, Number(body.discount) || 0));
+        } else {
+            if (discountPct < 0) discountPct = 0;
+            if (discountPct > 100) discountPct = 100;
+            discountPct = round2(discountPct);
+            discount = round2(gross * discountPct / 100);
+        }
         if (discount > gross) discount = gross;
         const net = round2(gross - discount);
 
         const [saleResult] = await conn.query(
-            "INSERT INTO sales (user_id, gross, discount, net) VALUES (?, ?, ?, ?)",
-            [session.uid, gross, discount, net]
+            "INSERT INTO sales (user_id, gross, discount, net, discount_pct) VALUES (?, ?, ?, ?, ?)",
+            [session.uid, gross, discount, net, discountPct]
         );
         const saleId = saleResult.insertId;
 
@@ -168,6 +183,7 @@ async function createSale(req, res, session) {
                 items: items,
                 gross: gross,
                 discount: discount,
+                discountPct: discountPct,
                 net: net
             }
         });
@@ -186,7 +202,7 @@ async function createSale(req, res, session) {
 module.exports = async function handler(req, res) {
     try {
         if (req.method === "GET") {
-            if (!requireAuth(req, res)) return;
+            if (!requireAdmin(req, res)) return;
             return await listSales(req, res);
         }
         if (req.method === "POST") {

@@ -458,7 +458,7 @@ body {
 }
 
 .discount-input {
-    width: 110px;
+    width: 96px;
     border: 2px solid #f0d6dd;
     border-radius: 10px;
     padding: 8px 10px;
@@ -468,6 +468,27 @@ body {
     outline: none;
     background: #fffafb;
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.discount-wrap {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.discount-suffix {
+    font-size: 14px;
+    font-weight: 600;
+    color: #7a5c72;
+}
+
+.discount-amount {
+    margin: 6px 0 0;
+    min-height: 16px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #7a5c72;
+    text-align: right;
 }
 
 .discount-input:focus {

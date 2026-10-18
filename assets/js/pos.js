@@ -23,10 +23,12 @@
     var subtotalEl = document.getElementById("subtotal");
     var totalEl = document.getElementById("total");
     var discountInput = document.getElementById("discount-input");
+    var discountAmountEl = document.getElementById("discount-amount");
     var searchInput = document.getElementById("search-input");
     var filtersEl = document.getElementById("cat-filters");
 
-    // --- Admin-only nav link ---
+    // --- Admin-only nav link and sales summary ---
+    // A cashier only rings up sales: no inventory, no reports, no store totals.
     document.querySelectorAll(".pos-admin-link").forEach(function (link) {
         if (role === "admin") {
             link.style.display = "";
@@ -34,6 +36,13 @@
             link.remove();
         }
     });
+
+    var statsSection = document.getElementById("pos-stats");
+    if (role === "admin" && statsSection) {
+        statsSection.style.display = "";
+    } else if (statsSection) {
+        statsSection.remove();
+    }
 
     function handleAuthError(err) {
         if (err && err.status === 401) {
@@ -177,11 +186,16 @@
         renderList();
     }
 
-    function readDiscount(gross) {
-        var value = Api.round2(Number(discountInput.value) || 0);
+    // The cashier types a percentage; the peso amount is derived from the running gross.
+    function readDiscountPct() {
+        var value = Number(discountInput.value) || 0;
         if (value < 0) value = 0;
-        if (value > gross) value = gross;
-        return value;
+        if (value > 100) value = 100;
+        return Api.round2(value);
+    }
+
+    function discountAmount(gross, pct) {
+        return Api.round2(gross * pct / 100);
     }
 
     function renderCart() {
@@ -253,16 +267,19 @@
         });
 
         var gross = Api.round2(subtotal);
-        var discount = readDiscount(gross);
-        discountInput.value = discount ? discount : "";
+        var pct = readDiscountPct();
+        var off = discountAmount(gross, pct);
 
         cartCountEl.textContent = count;
         subtotalEl.textContent = currency(gross);
-        totalEl.textContent = currency(gross - discount);
+        totalEl.textContent = currency(Api.round2(gross - off));
+        discountAmountEl.textContent = pct > 0 ? Api.round2(pct) + "% off = " + currency(off) : "";
     }
 
-    // --- Sales summary ---
+    // --- Sales summary (administrators only) ---
     async function renderStats() {
+        if (role !== "admin" || !document.getElementById("pos-stats")) return;
+
         var stats;
         try {
             stats = await Api.getStats(currentRange);
@@ -313,7 +330,7 @@
                 items: keys.map(function (k) {
                     return { id: cart[k].id, qty: cart[k].qty };
                 }),
-                discount: readDiscount(gross)
+                discountPct: readDiscountPct()
             });
         } catch (err) {
             if (!handleAuthError(err)) alert(err.message);
@@ -325,9 +342,13 @@
             return it.name + "  x" + it.qty + "  =  " + currency(it.total);
         }).join("\n");
 
+        var discountLine = sale.discountPct > 0
+            ? Api.round2(sale.discountPct) + "%  (-" + currency(sale.discount) + ")"
+            : currency(sale.discount);
+
         alert("RECEIPT\nLuna's Pharmacy\n" + sale.txNo + "\n\n" + lines +
             "\n\nGROSS SALES: " + currency(sale.gross) +
-            "\nDISCOUNT: " + currency(sale.discount) +
+            "\nDISCOUNT: " + discountLine +
             "\nNET SALES: " + currency(sale.net));
 
         cart = {};

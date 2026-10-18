@@ -3,9 +3,13 @@
 
     var role = sessionStorage.getItem("luna_user");
 
-    // --- Access guard ---
+    // --- Access guard: sales reports are admin only ---
     if (!role) {
         window.location.href = "login.html";
+        return;
+    }
+    if (role !== "admin") {
+        window.location.href = "pos.html";
         return;
     }
 
@@ -111,6 +115,16 @@
         document.getElementById("rep-top-empty").style.display = stats.top.length ? "none" : "block";
     }
 
+    // A sale shows the rate that was applied next to the money it saved. Sales made
+    // before discounts were percentages have no rate, so they show the amount alone.
+    function discountLabel(sale) {
+        var pct = Number(sale.discountPct) || 0;
+        var amount = Number(sale.discount) || 0;
+        if (pct > 0) return Api.round2(pct) + "% (" + currency(amount) + ")";
+        if (amount > 0) return currency(amount);
+        return "—";
+    }
+
     function renderTransactions(stats) {
         var tbody = document.querySelector("#rep-tx-table tbody");
 
@@ -121,7 +135,7 @@
                 "<td>" + esc(sale.cashier) + "</td>" +
                 "<td>" + sale.units + "</td>" +
                 "<td>" + currency(sale.gross) + "</td>" +
-                "<td>" + currency(sale.discount) + "</td>" +
+                "<td>" + esc(discountLabel(sale)) + "</td>" +
                 "<td>" + currency(sale.net) + "</td>" +
                 "</tr>";
         }).join("");
@@ -200,7 +214,7 @@
 
             // --- Section 3: the transactions ---
             lines.push(["Transactions"].map(csvCell).join(","));
-            lines.push(["Sale No.", "Date", "Cashier", "Items", "Gross", "Discount", "Net"].map(csvCell).join(","));
+            lines.push(["Sale No.", "Date", "Cashier", "Items", "Gross", "Discount %", "Discount", "Net"].map(csvCell).join(","));
             if (stats.sales.length) {
                 stats.sales.forEach(function (sale) {
                     lines.push([
@@ -209,6 +223,7 @@
                         csvCell(sale.cashier),
                         sale.units,
                         money(sale.gross),
+                        Api.round2(Number(sale.discountPct) || 0).toFixed(2),
                         money(sale.discount),
                         money(sale.net)
                     ].join(","));

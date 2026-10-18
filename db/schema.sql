@@ -27,6 +27,7 @@ CREATE TABLE IF NOT EXISTS sales (
     user_id INT NOT NULL,
     gross DECIMAL(10, 2) NOT NULL,
     discount DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
+    discount_pct DECIMAL(5, 2) NOT NULL DEFAULT 0.00,
     net DECIMAL(10, 2) NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     KEY idx_sales_created_at (created_at),
