@@ -353,6 +353,15 @@
             roleLabel.textContent = role === "admin" ? "Admin" : "Cashier";
         }
 
+        // --- Management links for the admin; the cashier keeps a clean register ---
+        document.querySelectorAll(".pos-admin-link").forEach(function (link) {
+            if (role === "admin") {
+                link.style.display = "";
+            } else {
+                link.remove();
+            }
+        });
+
         try {
             await loadProducts();
         } catch (err) {
