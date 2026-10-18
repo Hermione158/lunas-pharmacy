@@ -1,0 +1,19 @@
+{
+    "name": "lunas-pharmacy",
+    "version": "1.0.0",
+    "private": true,
+    "description": "Luna's Pharmacy POS and Inventory System",
+    "engines": {
+        "node": ">=18"
+    },
+    "scripts": {
+        "start": "node server/index.js",
+        "seed": "node scripts/seed.js",
+        "smoke": "node scripts/smoke.js"
+    },
+    "dependencies": {
+        "bcryptjs": "^2.4.3",
+        "jsonwebtoken": "^9.0.2",
+        "mysql2": "^3.11.0"
+    }
+}

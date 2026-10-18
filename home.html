@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Luna's Pharmacy | Mabilisang LUNAS Sa Abot Kayang Gamot</title>
+    <link rel="stylesheet" href="assets/css/home.css">
+<link rel="stylesheet" href="assets/css/nav.css">
+</head>
+<body>
+    
+    <!-- Header Navigation -->
+    <header class="header">
+        <img class="header-logo" src="assets/images/logo.png" alt="Luna's Pharmacy Logo" />
+        
+        <div class="search-bar">
+            <input type="text" class="search-input" placeholder="" aria-label="Search" />
+            <button class="search-button">⌕</button>
+        </div>
+        
+        <nav class="nav-links">
+            <a href="home.html">HOME</a>
+            <a href="products.html">CATEGORIES</a>
+        </nav>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <img class="decorative-moon" src="assets/images/moon.png" alt="" />
+        
+        <div class="hero-content">
+            <img class="main-logo" src="assets/images/logo.png" alt="Luna's Pharmacy" />
+            <h1 class="hero-tagline">MABILISANG LUNAS SA ABOT KAYANG<br>GAMOT</h1>
+            <a href="products.html">
+                <button class="btn-primary">Browse Medicines</button>
+            </a>
+        </div>
+        
+        <img class="decorative-pill pill-bottom" src="assets/images/pill.png" alt="" />
+    </section>
+
+    <!-- Categories Section -->
+    <section class="categories">
+        <h2 class="category-heading">BROWSE BY CATEGORY</h2>
+    
+        <div class="category-grid">
+            <a href="cardiovascular.html" class="category-btn">Cardiovascular &<br>Blood Pressure</a>
+            <a href="painrelief.html" class="category-btn">Pain Relief &<br>Anti-Inflammatory<br>(Analgesic / NSAID)</a>
+            <a href="cough.html" class="category-btn">Cough, Cold, Allergy &<br>Respiratory</a>
+            <a href="gastrointestinal.html" class="category-btn">Gastrointestinal &<br>Digestive Health</a>
+            
+            <a href="antivertigo.html" class="category-btn">Anti-Vertigo &<br>Motion Sickness</a>
+            <a href="vitamins.html" class="category-btn">Vitamins, Minerals &<br>Supplements</a>
+            <a href="others.html" class="category-btn">Other Specialty &<br>Oral Care</a>
+            <a href="products.html" class="category-btn">ALL</a>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-columns">
+            <div class="footer-col">
+                <h3>Location:</h3>
+                <p>Francisco Delos Santos Bldg.,<br>COR Santiago Street, Abangan Sur,<br>Marilao, Bulacan, Philippines</p>
+            </div>
+            
+            <div class="footer-col">
+                <h3>Phone:</h3>
+                <p>0961-485-1094<br>0918-641-6029</p>
+            </div>
+            
+            <div class="footer-col">
+                <h3>Operating Hours:</h3>
+                <p>6:00 AM - 12:00AM</p>
+            </div>
+            
+            <div class="footer-col quick-links">
+                <h3>Quick Links</h3>
+                <a href="home.html">HOME</a>
+                <a href="products.html">CATEGORIES</a>
+            </div>
+        </div>
+        
+        <div class="footer-bottom">
+            <a href="https://www.facebook.com/profile.php?id=61550548643215" class="fb-link">Visit Our Facebook Page</a>
+            <p>© Luna's Pharmacy. 2026. All Rights Reserved</p>
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener('keydown', function (e) {
+            if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'l') {
+                e.preventDefault();
+                window.location.href = 'login.html';
+            }
+        });
+    </script>
+    <script src="assets/js/nav.js"></script>
+</body>
+</html>

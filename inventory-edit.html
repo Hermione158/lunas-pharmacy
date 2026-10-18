@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Inventory - Luna's Pharmacy</title>
+    <link rel="stylesheet" href="assets/css/inventory.css">
+</head>
+<body data-page="inventory-edit">
+
+    <header class="inv-header">
+        <img class="inv-logo" src="assets/images/logo.png" alt="Luna's Pharmacy Logo" />
+        <div class="inv-title">
+            <h1>Update Inventory</h1>
+            <span id="role-label">Administrator</span>
+        </div>
+        <nav class="inv-nav">
+            <a href="inventory.html" class="inv-link">View Inventory</a>
+            <a href="reports.html" class="inv-link">Reports</a>
+            <a href="users.html" class="inv-link inv-admin-link" style="display:none;">Accounts</a>
+            <a href="home.html" class="inv-link">Back to Store</a>
+            <button type="button" class="inv-logout">Log Out</button>
+        </nav>
+    </header>
+
+    <main class="inv-main">
+        <div class="inv-page-head">
+            <div>
+                <h2>Edit Medicine Stock</h2>
+                <p>Update prices, stock counts and item details, then save your changes.</p>
+            </div>
+            <div class="inv-stats">
+                <div class="stat-card">
+                    <div class="label">Total Items</div>
+                    <div class="value" id="total-count">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="label">Low Stock</div>
+                    <div class="value" id="low-count">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="label">Out of Stock</div>
+                    <div class="value" id="out-count">0</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="inv-toolbar">
+            <input type="text" id="inv-search" class="inv-search" placeholder="Search medicine or category..." aria-label="Search inventory" />
+            <div class="inv-chips" id="inv-chips"></div>
+            <button type="button" id="add-item" class="btn btn-soft">+ Add Item</button>
+            <button type="button" id="import-catalog" class="btn btn-outline" title="Add the sample medicine list at 0 stock. Items you already have are kept.">Import sample catalog</button>
+            <button type="button" id="save-all-btn" class="btn btn-primary">Save All</button>
+        </div>
+
+        <div class="inv-table-wrap">
+            <table class="inv-table" id="inv-table">
+                <thead>
+                    <tr>
+                        <th>Item</th>
+                        <th>Category</th>
+                        <th>Price</th>
+                        <th>Stock</th>
+                        <th>Status</th>
+                        <th style="text-align:right;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+            <p id="no-results" class="no-results" style="display:none;">No items match your search.</p>
+        </div>
+
+        <div class="inv-foot">
+            <span class="hint" id="save-hint"></span>
+        </div>
+    </main>
+
+    <script src="assets/js/api.js"></script>
+    <script src="assets/js/inventory.js"></script>
+</body>
+</html>

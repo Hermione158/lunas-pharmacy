@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Luna's Pharmacy</title>
+    <link rel="stylesheet" href="assets/css/login.css">
+</head>
+<body>
+    <div class="log-in">
+        <img class="image-1" src="assets/images/logo.png" alt="Luna's Pharmacy Logo" />
+        
+        <form class="form-log-in">
+            <div class="input-field">
+                <label for="username" class="label">Username</label>
+                <input type="text" id="username" class="input" placeholder="Enter Your Username" autocomplete="username" required />
+            </div>
+            
+            <div class="input-field">
+                <label for="password" class="label">Password</label>
+                <input type="password" id="password" class="input" placeholder="Enter Your Password" autocomplete="current-password" required />
+            </div>
+            
+            <p id="login-error" class="login-error" style="display:none;">Incorrect username or password.</p>
+            
+            <div class="checkbox-and-label">
+                <input type="checkbox" id="show-password" class="checkbox" />
+                <label for="show-password" class="show-password">Show Password</label>
+            </div>
+<button type="submit" class="button">Log In</button>
+
+            <p class="text-link"><a href="setup.html" id="setup-link" class="don-t-have-an-account" style="display:none;">First time here? Create the admin account</a></p>
+            
+        </form>
+    </div>
+
+    <script src="assets/js/api.js"></script>
+    <script>
+        // Show the setup link only while the database has no accounts yet.
+        Api.setupAvailable().then(function (available) {
+            if (available) {
+                document.getElementById("setup-link").style.display = "inline";
+            }
+        }).catch(function () {
+            // API not reachable: keep the link hidden
+        });
+
+        document.getElementById("show-password").addEventListener("change", function () {
+            var password = document.getElementById("password");
+            password.type = this.checked ? "text" : "password";
+        });
+
+        document.querySelector(".form-log-in").addEventListener("submit", async function (e) {
+            e.preventDefault();
+            var username = document.getElementById("username").value.trim();
+            var password = document.getElementById("password").value;
+            var error = document.getElementById("login-error");
+            var button = this.querySelector(".button");
+
+            error.style.display = "none";
+            button.disabled = true;
+
+            try {
+                var result = await Api.login(username, password);
+                sessionStorage.setItem("luna_user", result.user.role);
+                sessionStorage.setItem("luna_name", result.user.username);
+                window.location.href = result.user.role === "admin" ? "inventory-edit.html" : "pos.html";
+            } catch (err) {
+                error.textContent = err.status === 401 ? "Incorrect username or password." : err.message;
+                error.style.display = "block";
+                button.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,8 @@
+# Frontend-only deployment: the backend lives on Render, so nothing server-side
+# is uploaded to Vercel (this also keeps server source out of the public CDN).
+server/
+scripts/
+db/
+package.json
+package-lock.json
+render.yaml

@@ -1,0 +1,286 @@
+.kremil-s-antacid,
+.kremil-s-antacid * {
+  box-sizing: border-box;
+}
+.kremil-s-antacid {
+  background: #ffcad6;
+  height: 1020px;
+  position: relative;
+  overflow: hidden;
+}
+.liquid-glass-regular-medium {
+  width: 628px;
+  height: 585px;
+  position: absolute;
+  left: 92px;
+  top: 240px;
+  aspect-ratio: 628/585;
+}
+.fill-shadow {
+  background: linear-gradient(
+      to left,
+      rgba(191, 191, 191, 0.1),
+      rgba(191, 191, 191, 0.1)
+    ),
+    linear-gradient(to left, rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0.7));
+  border-radius: 34px;
+  position: absolute;
+  right: 0px;
+  left: 0px;
+  bottom: 0px;
+  top: 0px;
+  box-shadow: 0px 8px 48px 0px rgba(0, 0, 0, 0.25),
+    0px 0px 0px 0.5px rgba(219, 219, 219, 1),
+    -1.25px 0px 0px -0.75px rgba(219, 219, 219, 1),
+    1.25px 0px 0px -0.75px rgba(219, 219, 219, 1);
+  overflow: hidden;
+}
+.glass-effect {
+  background: #ffffff;
+  border-radius: 34px;
+  position: absolute;
+  right: 0px;
+  left: 0px;
+  bottom: 0px;
+  top: 0px;
+  box-shadow: inset 0px 40px 30px -40px rgba(230, 230, 230, 1),
+    inset 0px -40px 10px -40px rgba(40, 40, 40, 1),
+    inset 0px 40px 10px -40px rgba(40, 40, 40, 1);
+  overflow: hidden;
+}
+.rectangle-2 {
+  background: linear-gradient(to left, #d9d9d9, #d9d9d9);
+  border-radius: 25px;
+  width: 500px;
+  height: 489px;
+  position: absolute;
+  left: 156px;
+  top: 288px;
+  object-fit: cover;
+  aspect-ratio: 500/489;
+}
+.kremil-s-antacid-kremil-s-kremil-s-advance {
+  color: #000000;
+  text-align: left;
+  position: absolute;
+  left: 759px;
+  top: 240px;
+  width: 693px;
+}
+.kremil-s-antacid-kremil-s-kremil-s-advance-span {
+  font-family: "SfPro-Bold", sans-serif;
+  font-size: 48px;
+  line-height: 120%;
+  letter-spacing: -0.02em;
+  font-weight: 700;
+}
+.kremil-s-antacid-kremil-s-kremil-s-advance-span2 {
+  font-family: "SfPro-Ultralight", sans-serif;
+  font-size: 36px;
+  line-height: 120%;
+  letter-spacing: -0.02em;
+  font-weight: 400;
+}
+.description-kremil-s-is-a-combination-medication-containing-acid-neutralizing-compounds-aluminum-and-magnesium-hydroxide-and-an-anti-flatulent-simethicone-it-neutralizes-excess-stomach-acid-while-breaking-up-trapped-gas-bubbles-in-the-gut {
+  color: #000000;
+  text-align: justified;
+  font-family: var(--typography-font-family-sf-pro, "-", sans-serif);
+  font-size: 20px;
+  line-height: 140%;
+  font-weight: 400;
+  position: absolute;
+  left: 759px;
+  top: 359px;
+  width: 595px;
+}
+.description-kremil-s-is-a-combination-medication-containing-acid-neutralizing-compounds-aluminum-and-magnesium-hydroxide-and-an-anti-flatulent-simethicone-it-neutralizes-excess-stomach-acid-while-breaking-up-trapped-gas-bubbles-in-the-gut-span {
+  font-family: "SfPro-Bold", sans-serif;
+  font-weight: 700;
+}
+.description-kremil-s-is-a-combination-medication-containing-acid-neutralizing-compounds-aluminum-and-magnesium-hydroxide-and-an-anti-flatulent-simethicone-it-neutralizes-excess-stomach-acid-while-breaking-up-trapped-gas-bubbles-in-the-gut-span2 {
+  font-family: "SfPro-Regular", sans-serif;
+}
+.uses-relief-of-hyperacidity-and-stomach-ulcers-relief-of-trapped-stomach-gas-and-bloating-management-of-acid-indigestion {
+  color: #000000;
+  text-align: left;
+  font-family: "-", sans-serif;
+  font-size: 20px;
+  line-height: 140%;
+  font-weight: 400;
+  position: absolute;
+  left: 761px;
+  top: 548px;
+  width: 593px;
+}
+.uses-relief-of-hyperacidity-and-stomach-ulcers-relief-of-trapped-stomach-gas-and-bloating-management-of-acid-indigestion-span {
+  font-family: "SfPro-Bold", sans-serif;
+  font-weight: 700;
+}
+.uses-relief-of-hyperacidity-and-stomach-ulcers-relief-of-trapped-stomach-gas-and-bloating-management-of-acid-indigestion-span2 {
+  font-family: "SfPro-Regular", sans-serif;
+}
+.categories-gastrointestinal-digestive-health {
+  color: #000000;
+  text-align: left;
+  font-family: "-", sans-serif;
+  font-size: 16px;
+  line-height: 140%;
+  font-weight: 400;
+  position: absolute;
+  left: 759px;
+  top: 338px;
+}
+.categories-gastrointestinal-digestive-health-span {
+  font-family: "SfPro-Regular", sans-serif;
+}
+.categories-gastrointestinal-digestive-health-span2 {
+  font-family: "SfPro-Thin", sans-serif;
+  font-weight: 100;
+}
+.button-back {
+  background: #ffcad6;
+  border-radius: var(--var-sds-size-radius-400, 16px);
+  padding: var(--var-sds-size-space-300, 12px);
+  display: flex;
+  flex-direction: row;
+  gap: var(--var-sds-size-space-200, 8px);
+  align-items: center;
+  justify-content: center;
+  width: 60px;
+  height: 50px;
+  position: absolute;
+  left: 32px;
+  top: 144px;
+  overflow: hidden;
+}
+.div {
+  color: var(--var-sds-color-text-brand-default, #2c2c2c);
+  text-align: center;
+  font-family: var(
+    --m3-display-medium-emphasized-font-family,
+    "Roboto-Medium",
+    sans-serif
+  );
+  font-size: var(--m3-display-medium-emphasized-font-size, 45px);
+  line-height: var(--m3-display-medium-emphasized-line-height, 52px);
+  font-weight: var(--m3-display-medium-emphasized-font-weight, 500);
+  position: relative;
+  width: 37px;
+}
+.rectangle-1 {
+  background: #382449;
+  width: 1440px;
+  height: 109px;
+  position: absolute;
+  left: 0px;
+  top: 0px;
+}
+.text-link {
+  display: flex;
+  flex-direction: row;
+  gap: 0px;
+  align-items: flex-start;
+  justify-content: flex-start;
+  position: absolute;
+  left: 1333px;
+  top: 41px;
+}
+.text-link2 {
+  color: #ffcad6;
+  text-align: left;
+  font-family: var(
+    --typography-font-family-sf-pro,
+    "SfPro-Semibold",
+    sans-serif
+  );
+  font-size: 20px;
+  line-height: 140%;
+  font-weight: 600;
+  text-decoration: underline;
+  position: relative;
+}
+.text-link3 {
+  display: flex;
+  flex-direction: row;
+  gap: 0px;
+  align-items: flex-start;
+  justify-content: flex-start;
+  position: absolute;
+  left: 1170px;
+  top: 41px;
+}
+.textbox-search {
+  background: var(--grays-white, #ffffff);
+  border-radius: var(--var-sds-size-radius-full, 9999px);
+  border-style: solid;
+  border-color: var(--var-sds-color-border-default-default, #d9d9d9);
+  border-width: 1px;
+  padding: var(--var-sds-size-space-300, 12px)
+    var(--var-sds-size-space-400, 16px) var(--var-sds-size-space-300, 12px)
+    var(--var-sds-size-space-400, 16px);
+  display: flex;
+  flex-direction: row;
+  gap: var(--var-sds-size-space-200, 8px);
+  align-items: center;
+  justify-content: flex-start;
+  width: 545px;
+  height: 50px;
+  min-width: 120px;
+  position: absolute;
+  left: 447px;
+  top: 30px;
+  box-shadow: 0px 4px 4px 0px rgba(0, 0, 0, 0.25);
+  overflow: hidden;
+}
+.button-search {
+  background: var(--var-sds-color-background-brand-default, #2c2c2c);
+  border-radius: var(--var-sds-size-radius-400, 16px);
+  border-style: solid;
+  border-color: var(--var-sds-color-border-brand-default, #2c2c2c);
+  border-width: 1px;
+  padding: var(--var-sds-size-space-300, 12px);
+  display: flex;
+  flex-direction: row;
+  gap: var(--var-sds-size-space-200, 8px);
+  align-items: center;
+  justify-content: center;
+  width: 68px;
+  height: 33px;
+  position: absolute;
+  left: 911px;
+  top: 38px;
+  overflow: hidden;
+}
+.div2 {
+  color: var(--var-sds-color-text-brand-on-brand, #f5f5f5);
+  text-align: center;
+  font-family: var(
+    --m3-display-medium-emphasized-font-family,
+    "Roboto-Medium",
+    sans-serif
+  );
+  font-size: var(--m3-display-medium-emphasized-font-size, 45px);
+  line-height: var(--m3-display-medium-emphasized-line-height, 52px);
+  font-weight: var(--m3-display-medium-emphasized-font-weight, 500);
+  position: relative;
+  width: 20px;
+}
+.text-link4 {
+  display: flex;
+  flex-direction: row;
+  gap: 0px;
+  align-items: flex-start;
+  justify-content: flex-start;
+  position: absolute;
+  left: 1075px;
+  top: 41px;
+}
+.logo-png {
+  width: 199px;
+  height: 109px;
+  position: absolute;
+  left: 80px;
+  top: 0px;
+  object-fit: cover;
+  aspect-ratio: 199/109;
+}

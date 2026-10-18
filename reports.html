@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sales Reports - Luna's Pharmacy</title>
+    <link rel="stylesheet" href="assets/css/inventory.css">
+</head>
+<body data-page="reports">
+
+    <header class="inv-header">
+        <img class="inv-logo" src="assets/images/logo.png" alt="Luna's Pharmacy Logo" />
+        <div class="inv-title">
+            <h1>Sales Reports</h1>
+            <span id="role-label">Cashier</span>
+        </div>
+        <nav class="inv-nav">
+            <a href="pos.html" class="inv-link">Point of Sale</a>
+            <a href="inventory.html" class="inv-link">Inventory</a>
+            <a href="reports.html" class="inv-link active">Reports</a>
+            <a href="users.html" class="inv-link inv-admin-link" style="display:none;">Accounts</a>
+            <a href="home.html" class="inv-link">Back to Store</a>
+            <button type="button" class="inv-logout">Log Out</button>
+        </nav>
+    </header>
+
+    <main class="inv-main">
+        <div class="inv-page-head">
+            <div>
+                <h2>Gross Sales, Net Sales and Best Sellers</h2>
+                <p id="range-label">Every completed sale from the POS, summarised below.</p>
+            </div>
+            <div class="inv-stats">
+                <div class="stat-card">
+                    <div class="label">Gross Sales</div>
+                    <div class="value" id="rep-gross">₱ 0.00</div>
+                </div>
+                <div class="stat-card">
+                    <div class="label">Net Sales</div>
+                    <div class="value" id="rep-net">₱ 0.00</div>
+                </div>
+                <div class="stat-card">
+                    <div class="label">Discounts</div>
+                    <div class="value" id="rep-discount">₱ 0.00</div>
+                </div>
+                <div class="stat-card">
+                    <div class="label">Transactions</div>
+                    <div class="value" id="rep-tx">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="label">Items Sold</div>
+                    <div class="value" id="rep-units">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="label">Average Sale</div>
+                    <div class="value" id="rep-avg">₱ 0.00</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="inv-toolbar">
+            <div class="inv-chips" id="rep-ranges">
+                <button type="button" class="chip" data-range="today">Today</button>
+                <button type="button" class="chip" data-range="week">This Week</button>
+                <button type="button" class="chip" data-range="month">This Month</button>
+                <button type="button" class="chip active" data-range="all">All Time</button>
+            </div>
+            <span class="hint" id="rep-hint"></span>
+        </div>
+
+        <div class="inv-table-wrap">
+            <h3 class="rep-heading">Most Sold Items</h3>
+            <table class="inv-table" id="rep-top-table">
+                <thead>
+                    <tr>
+                        <th>Rank</th>
+                        <th>Item</th>
+                        <th>Qty Sold</th>
+                        <th>Revenue</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+            <p id="rep-top-empty" class="no-results" style="display:none;">No sales recorded in this period.</p>
+        </div>
+
+        <div class="inv-table-wrap">
+            <h3 class="rep-heading">Transactions</h3>
+            <table class="inv-table" id="rep-tx-table">
+                <thead>
+                    <tr>
+                        <th>Sale No.</th>
+                        <th>Date</th>
+                        <th>Cashier</th>
+                        <th>Items</th>
+                        <th>Gross</th>
+                        <th>Discount</th>
+                        <th>Net</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+            <p id="rep-tx-empty" class="no-results" style="display:none;">No transactions in this period.</p>
+        </div>
+    </main>
+
+    <script src="assets/js/api.js"></script>
+    <script src="assets/js/reports.js"></script>
+</body>
+</html>

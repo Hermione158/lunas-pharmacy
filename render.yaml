@@ -1,0 +1,30 @@
+# Render blueprint for the Luna's Pharmacy backend.
+# Create the service with:  New > Blueprint  (or add the repo as a Web Service and
+# set the same values by hand). Secrets marked sync: false / generateValue are
+# filled in by Render and are never stored in this file.
+services:
+  - type: web
+    name: luna-pharmacy-api
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      # TiDB Cloud host from Cluster > Connect (yours will differ)
+      - key: DB_HOST
+        sync: false
+      - key: DB_PORT
+        value: "4000"
+      - key: DB_NAME
+        value: luna_pharmacy
+      - key: DB_SSL
+        value: require
+      - key: DB_USER
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      - key: SESSION_SECRET
+        generateValue: true

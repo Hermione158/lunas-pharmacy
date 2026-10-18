@@ -1,0 +1,301 @@
+ <!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Luna's Pharmacy</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+        }
+
+        :root {
+            --pink: #FF99B2;
+            --pink-d: #FF99B2;
+            --yellow: #fff200;
+            --white: #fff;
+            --ink: #FF99B2;
+
+            padding-top: env(safe-area-inset-top, 0px);
+            padding-bottom: env(safe-area-inset-bottom, 0px);
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root:not([data-theme="light"]) {
+                --pink: #FF99B2;
+            }
+        }
+
+        :root[data-theme="dark"] {
+            --pink: #FF99B2;
+        }
+
+        html, body {
+            height: 100%;
+        }
+
+        body {
+            background: var(--pink);
+            color: var(--white);
+            font-family: "Poppins", "Segoe UI", system-ui, Arial, sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .wrap {
+            width: min(560px, 92%);
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 18px;
+        }
+
+        h1 {
+            font-weight: 800;
+            font-size: clamp(30px, 8vw, 54px);
+            letter-spacing: 0.5px;
+            line-height: 1;
+        }
+
+        .band {
+            width: 100vw;
+            height: 6px;
+            background: var(--yellow);
+        }
+
+        .scene {
+            position: relative;
+            width: 170px;
+            height: 170px;
+            margin: 6px 0;
+        }
+
+        .moon {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            animation: sway 3.2s ease-in-out infinite;
+}
+
+        .star {
+            position: absolute;
+            color: var(--yellow);
+            animation: twinkle 1.6s ease-in-out infinite;
+        }
+
+        .s1 {
+            top: 8px;
+            right: 6px;
+            font-size: 30px;
+        }
+
+        .s2 {
+            top: 62px;
+            right: -14px;
+            font-size: 20px;
+            animation-delay: 0.5s;
+        }
+
+        .s3 {
+            bottom: 18px;
+            right: 4px;
+            font-size: 26px;
+            animation-delay: 1s;
+        }
+
+        .pills {
+            position: absolute;
+            left: 50%;
+            bottom: -6px;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 14px;
+        }
+
+        .pill {
+            width: 34px;
+            height: 14px;
+            border-radius: 8px;
+            background: linear-gradient(90deg, #fff 50%, #2f6bd8 50%);
+            box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.35);
+            animation: hop 1.2s ease-in-out infinite;
+        }
+
+        .pill:nth-child(2) {
+            background: linear-gradient(90deg, #111 50%, #e5262f 50%);
+            animation-delay: 0.2s;
+        }
+
+        .pill:nth-child(3) {
+            background: linear-gradient(90deg, #fff 50%, #f5a623 50%);
+            animation-delay: 0.4s;
+        }
+
+        .tag {
+            font-size: clamp(15px, 3.8vw, 20px);
+            font-weight: 500;
+        }
+
+        .tag b {
+            font-weight: 800;
+            color: var(--yellow);
+        }
+
+        .bar {
+            width: 100%;
+            max-width: 420px;
+            height: 16px;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.28);
+            overflow: hidden;
+        }
+
+        .bar i {
+            display: block;
+            height: 100%;
+            width: 0;
+            border-radius: 10px;
+            background: var(--yellow);
+            transition: width 0.25s;
+        }
+
+        .pct {
+            font-weight: 700;
+            font-size: 14px;
+            min-height: 20px;
+        }
+
+        .chip {
+            background: var(--yellow);
+            font-weight: 800;
+            font-size: clamp(11px, 2.9vw, 15px);
+            padding: 9px 18px;
+            border-radius: 30px;
+            border: 2px solid #fff;
+            -webkit-text-stroke: 0.8px black;
+}
+
+        .tag {
+            -webkit-text-stroke: 0.7px black;
+        }
+
+        main .title  {
+             -webkit-text-stroke: 2px black;
+        }
+
+        .pct {
+            -webkit-text-stroke: 0.8px black;
+        }
+
+        @keyframes sway {
+            0%, 100% {
+                transform: rotate(-5deg);
+            }
+
+            50% {
+                transform: rotate(5deg);
+            }
+        }
+
+        @keyframes twinkle {
+            0%, 100% {
+                opacity: 0.35;
+                transform: scale(0.8);
+            }
+            50% {
+                opacity: 1;
+                transform: scale(1.15);
+            }
+        }
+
+        @keyframes hop {
+            0%, 100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-12px);
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            * {
+                animation: none !important;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <main class="wrap" role="status" aria-live="polite">
+
+        <h1 class="title">LUNA's PHARMACY</h1>
+
+        <div class="band"></div>
+
+        <div class="scene" aria-hidden="true">
+
+            <img src="assets/images/moon1.png" class="moon">
+            <span class="star s1">★</span>
+            <span class="star s2">★</span>
+            <span class="star s3">★</span>
+
+            <div class="pills">
+                <span class="pill"></span>
+                <span class="pill"></span>
+                <span class="pill"></span>
+            </div>
+
+        </div>
+
+        <p class="tag">Mabilisang <b>LUNAS</b> sa abot kayang gamot!</p>
+
+        <div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="100">
+            <i id="fill"></i>
+        </div>
+
+        <div class="pct" id="pct">Naglo-load… 0%</div>
+
+        <div class="chip">BRANDED &amp; GENERIC MEDICINES • MEDICAL SUPPLIES</div>
+
+    </main>
+
+    <script>
+        var fill = document.getElementById("fill");
+        var pct = document.getElementById("pct");
+        var number = 0;
+
+        var loading = setInterval(function() {
+
+            number = Math.min(100, number + Math.ceil(Math.random() * 6));
+
+            fill.style.width = number + "%";
+
+            if (number < 100) {
+                pct.textContent = "Naglo-load… " + number + "%";
+            } else {
+                pct.textContent = "Handa na!";
+            }
+
+            if (number >= 100) {
+                clearInterval(loading);
+
+                setTimeout(function() {
+                    window.location.href = "home.html";
+                }, 1000);
+}
+        }, 180);
+    </script>
+
+</body>
+
+</html>

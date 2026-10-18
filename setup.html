@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Set Up - Luna's Pharmacy</title>
+    <link rel="stylesheet" href="assets/css/setup.css">
+</head>
+<body>
+
+    <div class="setup">
+        <img class="setup-logo" src="assets/images/logo.png" alt="Luna's Pharmacy Logo" />
+
+        <h1 class="setup-title">Create the first account</h1>
+        <p class="setup-sub">This page only works on a fresh database. It creates the administrator
+            account you will use to sign in and add the rest of the staff accounts.</p>
+
+        <div id="setup-closed" class="setup-closed" style="display:none;">
+            <h2>Setup already completed</h2>
+            <p>An account already exists in this database.</p>
+            <a href="login.html" class="setup-btn">Go to Log In</a>
+        </div>
+
+        <form id="setup-form" class="setup-form" style="display:none;">
+            <div class="input-field">
+                <label for="username" class="label">Administrator Username</label>
+                <input type="text" id="username" class="input" placeholder="Choose a username" autocomplete="username" required />
+            </div>
+
+            <div class="input-field">
+                <label for="password" class="label">Password</label>
+                <input type="password" id="password" class="input" placeholder="At least 6 characters" autocomplete="new-password" required />
+            </div>
+
+            <div class="input-field">
+                <label for="confirm" class="label">Confirm Password</label>
+                <input type="password" id="confirm" class="input" placeholder="Repeat the password" autocomplete="new-password" required />
+            </div>
+
+            <p id="setup-error" class="setup-error" style="display:none;"></p>
+
+            <button type="submit" class="setup-btn">Create Administrator</button>
+            <a href="login.html" class="setup-link">Already set up? Go to Log In</a>
+        </form>
+    </div>
+
+    <script src="assets/js/api.js"></script>
+    <script>
+        var form = document.getElementById("setup-form");
+        var closed = document.getElementById("setup-closed");
+        var error = document.getElementById("setup-error");
+
+        function showClosed() {
+            form.style.display = "none";
+            closed.style.display = "block";
+        }
+
+        function showError(message) {
+            error.textContent = message;
+            error.style.display = "block";
+        }
+
+        Api.setupAvailable().then(function (available) {
+            if (available) {
+                form.style.display = "block";
+            } else {
+                showClosed();
+            }
+        }).catch(function () {
+            showClosed();
+        });
+
+        form.addEventListener("submit", async function (e) {
+            e.preventDefault();
+
+            var username = document.getElementById("username").value.trim();
+            var password = document.getElementById("password").value;
+            var confirm = document.getElementById("confirm").value;
+            var button = form.querySelector(".setup-btn");
+
+            error.style.display = "none";
+
+            if (password !== confirm) {
+                showError("Passwords do not match.");
+                return;
+            }
+
+            button.disabled = true;
+            try {
+                await Api.runSetup(username, password, confirm);
+                error.style.display = "none";
+                form.innerHTML =
+                    '<p class="setup-done">Administrator account created. Redirecting to Log In...</p>' +
+                    '<a href="login.html" class="setup-btn">Go to Log In</a>';
+            } catch (err) {
+                showError(err.message);
+                button.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>

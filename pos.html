@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Point of Sale - Luna's Pharmacy</title>
+    <link rel="stylesheet" href="assets/css/pos.css">
+</head>
+<body>
+
+    <header class="pos-header">
+        <img class="pos-logo" src="assets/images/logo.png" alt="Luna's Pharmacy Logo" />
+        <div class="pos-title">
+            <h1>Point of Sale</h1>
+            <span>Cashier</span>
+        </div>
+        <nav class="pos-nav">
+            <a href="inventory.html" class="pos-link">Inventory</a>
+            <a href="reports.html" class="pos-link">Reports</a>
+            <a href="users.html" class="pos-link pos-admin-link" style="display:none;">Accounts</a>
+            <a href="home.html" class="pos-link">Back to Store</a>
+            <button type="button" id="logout-btn" class="pos-logout">Log Out</button>
+        </nav>
+    </header>
+
+    <section class="pos-stats">
+        <div class="pos-stats-head">
+            <h2>Sales Summary</h2>
+            <div class="pos-ranges">
+                <button type="button" class="pos-range active" data-range="today">Today</button>
+                <button type="button" class="pos-range" data-range="week">This Week</button>
+                <button type="button" class="pos-range" data-range="month">This Month</button>
+            </div>
+        </div>
+        <div class="pos-stat-cards">
+            <div class="pos-stat">
+                <div class="label">Gross Sales</div>
+                <div class="value" id="stat-gross">₱ 0.00</div>
+            </div>
+            <div class="pos-stat">
+                <div class="label">Net Sales</div>
+                <div class="value" id="stat-net">₱ 0.00</div>
+            </div>
+            <div class="pos-stat">
+                <div class="label">Transactions</div>
+                <div class="value" id="stat-tx">0</div>
+            </div>
+            <div class="pos-stat wide">
+                <div class="label">Most Sold Item</div>
+                <div class="value small" id="stat-top">No sales yet</div>
+            </div>
+        </div>
+    </section>
+
+    <main class="pos-main">
+        <section class="catalog">
+            <div class="catalog-tools">
+                <input type="text" id="search-input" class="search-input" placeholder="Search product..." aria-label="Search products" />
+                <div id="cat-filters" class="cat-filters"></div>
+            </div>
+            <div id="product-list" class="product-list"></div>
+        </section>
+
+        <aside class="cart">
+            <h2 class="cart-title">Current Sale</h2>
+            <div id="cart-items" class="cart-items">
+                <p class="cart-empty">No items yet. Tap a product to add it.</p>
+            </div>
+            <div class="cart-totals">
+                <div class="total-row"><span>Items</span><span id="cart-count">0</span></div>
+                <div class="total-row"><span>Gross Sales</span><span id="subtotal">₱ 0.00</span></div>
+                <label class="discount-row" for="discount-input">
+                    <span>Discount</span>
+                    <input type="number" id="discount-input" class="discount-input" min="0" step="0.01" placeholder="0.00" />
+                </label>
+                <div class="total-row grand"><span>Net Sales</span><span id="total">₱ 0.00</span></div>
+            </div>
+            <div class="cart-actions">
+                <button type="button" id="checkout-btn" class="btn-checkout">Checkout</button>
+                <button type="button" id="clear-btn" class="btn-clear">Clear</button>
+            </div>
+        </aside>
+    </main>
+
+    <script src="assets/js/api.js"></script>
+    <script src="assets/js/pos.js"></script>
+</body>
+</html>
