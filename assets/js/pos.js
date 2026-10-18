@@ -15,7 +15,6 @@
     var cart = {};
     var currentCat = "All";
     var searchTerm = "";
-    var currentRange = "today";
 
     var listEl = document.getElementById("product-list");
     var cartItemsEl = document.getElementById("cart-items");
@@ -27,8 +26,9 @@
     var searchInput = document.getElementById("search-input");
     var filtersEl = document.getElementById("cat-filters");
 
-    // --- Admin-only nav link and sales summary ---
-    // A cashier only rings up sales: no inventory, no reports, no store totals.
+    // --- Admin-only dashboard link ---
+    // The register itself is identical for every role; only an admin gets
+    // their way back to the management dashboard.
     document.querySelectorAll(".pos-admin-link").forEach(function (link) {
         if (role === "admin") {
             link.style.display = "";
@@ -36,13 +36,6 @@
             link.remove();
         }
     });
-
-    var statsSection = document.getElementById("pos-stats");
-    if (role === "admin" && statsSection) {
-        statsSection.style.display = "";
-    } else if (statsSection) {
-        statsSection.remove();
-    }
 
     function handleAuthError(err) {
         if (err && err.status === 401) {
@@ -276,42 +269,6 @@
         discountAmountEl.textContent = pct > 0 ? Api.round2(pct) + "% off = " + currency(off) : "";
     }
 
-    // --- Sales summary (administrators only) ---
-    async function renderStats() {
-        if (role !== "admin" || !document.getElementById("pos-stats")) return;
-
-        var stats;
-        try {
-            stats = await Api.getStats(currentRange);
-        } catch (err) {
-            handleAuthError(err);
-            return;
-        }
-
-        document.getElementById("stat-gross").textContent = currency(stats.gross);
-        document.getElementById("stat-net").textContent = currency(stats.net);
-        document.getElementById("stat-tx").textContent = stats.transactions;
-
-        var topEl = document.getElementById("stat-top");
-        if (stats.top.length) {
-            topEl.textContent = stats.top[0].name;
-            topEl.title = stats.top[0].qty + " sold · " + currency(stats.top[0].revenue);
-        } else {
-            topEl.textContent = "No sales yet";
-            topEl.title = "";
-        }
-    }
-
-    document.querySelectorAll(".pos-range").forEach(function (btn) {
-        btn.addEventListener("click", function () {
-            currentRange = btn.getAttribute("data-range");
-            document.querySelectorAll(".pos-range").forEach(function (b) {
-                b.classList.toggle("active", b === btn);
-            });
-            renderStats();
-        });
-    });
-
     // --- Checkout / clear ---
     document.getElementById("checkout-btn").addEventListener("click", async function () {
         var keys = Object.keys(cart);
@@ -355,7 +312,6 @@
         discountInput.value = "";
         await loadProducts();
         renderCart();
-        renderStats();
     });
 
     document.getElementById("clear-btn").addEventListener("click", function () {
@@ -408,7 +364,6 @@
         buildFilters();
         renderList();
         renderCart();
-        renderStats();
     }
 
     init();

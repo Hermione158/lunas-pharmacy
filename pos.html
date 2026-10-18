@@ -15,42 +15,11 @@
             <span>Cashier</span>
         </div>
         <nav class="pos-nav">
-            <a href="inventory.html" class="pos-link pos-admin-link" style="display:none;">Inventory</a>
-            <a href="reports.html" class="pos-link pos-admin-link" style="display:none;">Reports</a>
-            <a href="users.html" class="pos-link pos-admin-link" style="display:none;">Accounts</a>
+            <a href="inventory-edit.html" class="pos-link pos-admin-link" style="display:none;">Dashboard</a>
             <a href="home.html" class="pos-link">Back to Store</a>
             <button type="button" id="logout-btn" class="pos-logout">Log Out</button>
         </nav>
     </header>
-
-    <section class="pos-stats" id="pos-stats" style="display:none;">
-        <div class="pos-stats-head">
-            <h2>Sales Summary</h2>
-            <div class="pos-ranges">
-                <button type="button" class="pos-range active" data-range="today">Today</button>
-                <button type="button" class="pos-range" data-range="week">This Week</button>
-                <button type="button" class="pos-range" data-range="month">This Month</button>
-            </div>
-        </div>
-        <div class="pos-stat-cards">
-            <div class="pos-stat">
-                <div class="label">Gross Sales</div>
-                <div class="value" id="stat-gross">₱ 0.00</div>
-            </div>
-            <div class="pos-stat">
-                <div class="label">Net Sales</div>
-                <div class="value" id="stat-net">₱ 0.00</div>
-            </div>
-            <div class="pos-stat">
-                <div class="label">Transactions</div>
-                <div class="value" id="stat-tx">0</div>
-            </div>
-            <div class="pos-stat wide">
-                <div class="label">Most Sold Item</div>
-                <div class="value small" id="stat-top">No sales yet</div>
-            </div>
-        </div>
-    </section>
 
     <main class="pos-main">
         <section class="catalog">

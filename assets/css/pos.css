@@ -77,97 +77,6 @@ body {
     color: #382449;
 }
 
-/* Sales summary strip */
-.pos-stats {
-    margin: 20px 40px 0 40px;
-    background: rgba(255, 255, 255, 0.9);
-    border-radius: 20px;
-    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.08);
-    padding: 16px 20px;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-}
-
-.pos-stats-head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 10px;
-}
-
-.pos-stats-head h2 {
-    font-size: 18px;
-    font-weight: 700;
-    color: #382449;
-}
-
-.pos-ranges {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-}
-
-.pos-range {
-    border: none;
-    border-radius: 999px;
-    background: #ffe3ea;
-    color: #7a2a3d;
-    padding: 8px 14px;
-    font-size: 13px;
-    font-weight: 700;
-    cursor: pointer;
-    transition: background 0.2s ease, color 0.2s ease, transform 0.15s ease;
-}
-
-.pos-range:hover {
-    transform: translateY(-1px);
-}
-
-.pos-range.active {
-    background: #382449;
-    color: #ffcad6;
-}
-
-.pos-stat-cards {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 12px;
-}
-
-.pos-stat {
-    flex: 1 1 150px;
-    background: #fff5f8;
-    border-radius: 14px;
-    padding: 10px 16px;
-}
-
-.pos-stat.wide {
-    flex: 2 1 240px;
-}
-
-.pos-stat .label {
-    font-size: 11px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: #9a7c93;
-}
-
-.pos-stat .value {
-    font-size: 20px;
-    font-weight: 800;
-    color: #382449;
-    margin-top: 2px;
-}
-
-.pos-stat .value.small {
-    font-size: 14px;
-    font-weight: 700;
-    line-height: 1.35;
-}
-
 /* Main layout */
 .pos-main {
     display: flex;
@@ -536,10 +445,6 @@ body {
         padding: 14px 20px;
         flex-wrap: wrap;
         gap: 10px;
-    }
-
-    .pos-stats {
-        margin: 16px 16px 0 16px;
     }
 
     .pos-main {
