@@ -4,7 +4,7 @@
 
 const { getPool } = require("../_lib/db");
 const { requireAdmin } = require("../_lib/auth");
-const { send, readBody, serverError, asMoney, asStock } = require("../_lib/util");
+const { send, readBody, serverError, asMoney, asStock, asBarcode, duplicateError } = require("../_lib/util");
 
 function parseId(req) {
     const id = Number(req.query.id);
@@ -13,7 +13,7 @@ function parseId(req) {
 
 async function findProduct(id) {
     const [rows] = await getPool().query(
-        "SELECT id, name, image, category, price, stock FROM products WHERE id = ? LIMIT 1",
+        "SELECT id, name, barcode, image, category, price, stock FROM products WHERE id = ? LIMIT 1",
         [id]
     );
     return rows[0] || null;
@@ -26,6 +26,7 @@ async function updateProduct(req, res, id) {
     const body = readBody(req);
     const next = {
         name: body.name === undefined ? existing.name : String(body.name).trim(),
+        barcode: body.barcode === undefined ? existing.barcode : asBarcode(body.barcode),
         category: body.category === undefined ? existing.category : String(body.category).trim() || existing.category,
         image: body.image === undefined ? existing.image : String(body.image).trim(),
         price: body.price === undefined ? existing.price : asMoney(body.price),
@@ -38,13 +39,13 @@ async function updateProduct(req, res, id) {
 
     try {
         await getPool().query(
-            "UPDATE products SET name = ?, category = ?, image = ?, price = ?, stock = ? WHERE id = ?",
-            [next.name, next.category, next.image, next.price, next.stock, id]
+            "UPDATE products SET name = ?, barcode = ?, category = ?, image = ?, price = ?, stock = ? WHERE id = ?",
+            [next.name, next.barcode, next.category, next.image, next.price, next.stock, id]
         );
         return send(res, 200, { product: { id: id, ...next } });
     } catch (err) {
         if (err.code === "ER_DUP_ENTRY") {
-            return send(res, 409, { error: "\"" + next.name + "\" is already used by another item." });
+            return send(res, 409, { error: duplicateError(err, next.name) });
         }
         throw err;
     }

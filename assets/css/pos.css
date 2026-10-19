@@ -112,6 +112,24 @@ body {
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
+.scan-input {
+    width: 100%;
+    max-width: 420px;
+    border: 2px solid #7b4fa6;
+    outline: none;
+    border-radius: 999px;
+    padding: 14px 20px;
+    font-size: 15px;
+    background: #ffffff;
+    color: #1e1e1e;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.scan-input:focus {
+    border-color: #382449;
+    box-shadow: 0 0 0 3px rgba(123, 79, 166, 0.18);
+}
+
 .cat-filters {
     display: flex;
     flex-wrap: wrap;

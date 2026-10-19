@@ -4,11 +4,12 @@
 
 const { getPool } = require("./_lib/db");
 const { requireAuth, requireAdmin } = require("./_lib/auth");
-const { send, readBody, serverError, asMoney, asStock } = require("./_lib/util");
+const { send, readBody, serverError, asMoney, asStock, asBarcode, duplicateError } = require("./_lib/util");
 
 function productFields(body) {
     return {
         name: String(body.name || "").trim(),
+        barcode: asBarcode(body.barcode),
         category: String(body.category || "").trim() || "Uncategorized",
         image: String(body.image || "").trim(),
         price: asMoney(body.price),
@@ -18,7 +19,7 @@ function productFields(body) {
 
 async function listProducts(res) {
     const [rows] = await getPool().query(
-        "SELECT id, name, image, category, price, stock FROM products ORDER BY name ASC"
+        "SELECT id, name, barcode, image, category, price, stock FROM products ORDER BY name ASC"
     );
     send(res, 200, { products: rows });
 }
@@ -32,13 +33,14 @@ async function createProduct(req, res) {
 
     try {
         const [result] = await getPool().query(
-            "INSERT INTO products (name, image, category, price, stock) VALUES (?, ?, ?, ?, ?)",
-            [data.name, data.image, data.category, data.price, data.stock]
+            "INSERT INTO products (name, barcode, image, category, price, stock) VALUES (?, ?, ?, ?, ?, ?)",
+            [data.name, data.barcode, data.image, data.category, data.price, data.stock]
         );
         return send(res, 201, {
             product: {
                 id: result.insertId,
                 name: data.name,
+                barcode: data.barcode,
                 image: data.image,
                 category: data.category,
                 price: data.price,
@@ -47,7 +49,7 @@ async function createProduct(req, res) {
         });
     } catch (err) {
         if (err.code === "ER_DUP_ENTRY") {
-            return send(res, 409, { error: "\"" + data.name + "\" already exists in the inventory." });
+            return send(res, 409, { error: duplicateError(err, data.name) });
         }
         throw err;
     }

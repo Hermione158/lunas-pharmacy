@@ -12,6 +12,7 @@
 
     var products = [];
     var byId = {};
+    var byBarcode = {};
     var cart = {};
     var currentCat = "All";
     var searchTerm = "";
@@ -24,6 +25,7 @@
     var discountInput = document.getElementById("discount-input");
     var discountAmountEl = document.getElementById("discount-amount");
     var searchInput = document.getElementById("search-input");
+    var scanInput = document.getElementById("scan-input");
     var filtersEl = document.getElementById("cat-filters");
 
     function handleAuthError(err) {
@@ -331,7 +333,31 @@
     async function loadProducts() {
         products = await Api.getProducts();
         byId = {};
-        products.forEach(function (p) { byId[p.id] = p; });
+        byBarcode = {};
+        products.forEach(function (p) {
+            byId[p.id] = p;
+            if (p.barcode) byBarcode[p.barcode] = p;
+        });
+    }
+
+    // --- Barcode scanning ---
+    // USB scanners act like a keyboard: they type the code and press Enter.
+    if (scanInput) {
+        scanInput.addEventListener("keydown", function (e) {
+            if (e.key !== "Enter") return;
+            e.preventDefault();
+            var code = scanInput.value.trim();
+            scanInput.value = "";
+            if (!code) return;
+
+            var product = byBarcode[code];
+            if (!product) {
+                alert("No product with barcode " + code + ".");
+                return;
+            }
+            addToCart(product);
+            scanInput.focus();
+        });
     }
 
     async function init() {

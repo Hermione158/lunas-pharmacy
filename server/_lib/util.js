@@ -42,8 +42,22 @@ function asStock(value) {
     return isFinite(n) && n >= 0 ? n : null;
 }
 
+// Returns a trimmed barcode or null when the value is empty.
+function asBarcode(value) {
+    var text = value === undefined || value === null ? "" : String(value).trim();
+    return text || null;
+}
+
+// Friendly message for a UNIQUE violation, whichever column caused it.
+function duplicateError(err, name) {
+    if (/barcode/i.test(String(err && err.message || ""))) {
+        return "That barcode is already used by another item.";
+    }
+    return "\"" + name + "\" already exists in the inventory.";
+}
+
 function txNo(id) {
     return "TX-" + String(id).padStart(4, "0");
 }
 
-module.exports = { send, serverError, readBody, round2, asMoney, asStock, txNo };
+module.exports = { send, serverError, readBody, round2, asMoney, asStock, asBarcode, duplicateError, txNo };

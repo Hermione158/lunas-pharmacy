@@ -13,7 +13,7 @@
 
 const { getPool } = require("../_lib/db");
 const { requireAdmin } = require("../_lib/auth");
-const { send, readBody, serverError, asMoney, asStock, round2 } = require("../_lib/util");
+const { send, readBody, serverError, asMoney, asStock, asBarcode, round2 } = require("../_lib/util");
 
 // A safety net so a runaway page cannot lock up the database.
 const MAX_ITEMS = 500;
@@ -27,6 +27,8 @@ function samePrice(a, b) {
 
 function isSame(existing, item) {
     return existing.name === item.name &&
+        // An old page may not send a barcode at all - leave it untouched then.
+        (item.barcode === undefined || (existing.barcode || null) === (item.barcode || null)) &&
         existing.category === item.category &&
         samePrice(existing.price, item.price) &&
         Number(existing.stock) === Number(item.stock) &&
@@ -43,6 +45,7 @@ function itemFields(raw) {
     return {
         id: raw.id === undefined || raw.id === null || raw.id === "" ? null : Number(raw.id),
         name: String(raw.name || "").trim(),
+        barcode: raw.barcode === undefined ? undefined : asBarcode(raw.barcode),
         category: String(raw.category || "").trim() || "Uncategorized",
         image: raw.image === undefined || raw.image === null ? "" : String(raw.image).trim(),
         price: price,
@@ -57,6 +60,7 @@ function parseItems(rawItems) {
     if (rawItems.length > MAX_ITEMS) return { error: "Save at most " + MAX_ITEMS + " items at a time." };
 
     const items = [];
+    const barcodes = new Map();
     for (let i = 0; i < rawItems.length; i++) {
         const raw = rawItems[i];
         if (!raw || typeof raw !== "object") return { error: "Item " + (i + 1) + " is not valid." };
@@ -69,6 +73,14 @@ function parseItems(rawItems) {
         if (!data.name) return { error: "Item " + (i + 1) + " is missing its name." };
         if (data.price === null) return { error: "\"" + data.name + "\": price must be a non-negative number." };
         if (data.stock === null) return { error: "\"" + data.name + "\": stock must be a non-negative whole number." };
+
+        // The same barcode twice in one batch would only fail on the last write.
+        if (data.barcode) {
+            if (barcodes.has(data.barcode)) {
+                return { error: "Barcode " + data.barcode + " is used by both \"" + barcodes.get(data.barcode) + "\" and \"" + data.name + "\"." };
+            }
+            barcodes.set(data.barcode, data.name);
+        }
 
         items.push(data);
     }
@@ -98,7 +110,7 @@ async function saveAll(req, res) {
         const existing = new Map();
         for (const group of chunks(ids, ID_CHUNK)) {
             const [rows] = await connection.query(
-                "SELECT id, name, category, image, price, stock FROM products WHERE id IN (" + group.map(function () { return "?"; }).join(", ") + ")",
+                "SELECT id, name, barcode, category, image, price, stock FROM products WHERE id IN (" + group.map(function () { return "?"; }).join(", ") + ")",
                 group
             );
             for (const row of rows) existing.set(Number(row.id), row);
@@ -120,8 +132,8 @@ async function saveAll(req, res) {
         for (const item of items) {
             if (item.id === null) {
                 await connection.query(
-                    "INSERT INTO products (name, image, category, price, stock) VALUES (?, ?, ?, ?, ?)",
-                    [item.name, item.image, item.category, item.price, item.stock]
+                    "INSERT INTO products (name, barcode, image, category, price, stock) VALUES (?, ?, ?, ?, ?, ?)",
+                    [item.name, item.barcode === undefined ? null : item.barcode, item.image, item.category, item.price, item.stock]
                 );
                 added++;
                 continue;
@@ -135,9 +147,11 @@ async function saveAll(req, res) {
 
             // image stays as it is unless this batch explicitly sets one.
             const image = item.image || before.image || "";
+            // barcode follows the same rule: absent means keep, "" means clear.
+            const barcode = item.barcode === undefined ? (before.barcode || null) : item.barcode;
             await connection.query(
-                "UPDATE products SET name = ?, category = ?, image = ?, price = ?, stock = ? WHERE id = ?",
-                [item.name, item.category, image, item.price, item.stock, item.id]
+                "UPDATE products SET name = ?, barcode = ?, category = ?, image = ?, price = ?, stock = ? WHERE id = ?",
+                [item.name, barcode, item.category, image, item.price, item.stock, item.id]
             );
             updated++;
         }
@@ -152,6 +166,9 @@ async function saveAll(req, res) {
     } catch (err) {
         try { await connection.rollback(); } catch (e) { /* connection already gone */ }
         if (err.code === "ER_DUP_ENTRY") {
+            if (/barcode/i.test(String(err.message || ""))) {
+                return send(res, 409, { error: "That barcode is already used by another item." });
+            }
             return send(res, 409, { error: "Two items share a name. Each medicine name must be unique." });
         }
         throw err;

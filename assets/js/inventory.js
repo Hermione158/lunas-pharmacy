@@ -80,6 +80,7 @@
         }
         return {
             name: value("n").trim(),
+            barcode: value("b").trim(),
             category: value("c").trim(),
             price: parsePrice(value("p")),
             stock: Math.max(0, parseInt(value("s"), 10) || 0)
@@ -94,6 +95,7 @@
                 var st = Api.statusFor(p.stock);
                 return '<tr data-id="' + p.id + '" data-name="' + esc(p.name) + '" data-cat="' + esc(p.category) + '">' +
                     "<td>" + itemCellEdit(p) + "</td>" +
+                    '<td><input class="inv-input barcode-input" data-field="b" type="text" value="' + esc(p.barcode || "") + '" placeholder="Scan or type" /></td>' +
                     '<td><input class="inv-input" data-field="c" type="text" value="' + esc(p.category) + '" /></td>' +
                     '<td><input class="inv-input narrow" data-field="p" type="text" value="' + currency(p.price) + '" /></td>' +
                     '<td><input class="inv-input narrow" data-field="s" type="number" min="0" value="' + p.stock + '" /></td>' +
@@ -222,7 +224,7 @@
 
         try {
             if (isNew) {
-                await Api.addProduct({ name: data.name, category: data.category, price: data.price, stock: data.stock, image: "" });
+                await Api.addProduct({ name: data.name, barcode: data.barcode, category: data.category, price: data.price, stock: data.stock, image: "" });
                 flash("\"" + data.name + "\" added to the inventory.");
             } else {
                 await Api.updateProduct(id, data);
@@ -273,7 +275,7 @@
                 var data = readRow(row);
                 var isNew = row.getAttribute("data-new") === "1";
                 if (isNew && !data.name) continue; // blank new row: nothing to save
-                items.push({ id: isNew ? null : Number(row.getAttribute("data-id")), name: data.name, category: data.category, price: data.price, stock: data.stock });
+                items.push({ id: isNew ? null : Number(row.getAttribute("data-id")), name: data.name, barcode: data.barcode, category: data.category, price: data.price, stock: data.stock });
             }
 
             if (!items.length) {
@@ -315,6 +317,7 @@
             row.innerHTML =
                 '<td><div class="inv-item">' +
                 '<input class="inv-input" data-field="n" type="text" placeholder="Item name" /></div></td>' +
+                '<td><input class="inv-input barcode-input" data-field="b" type="text" placeholder="Scan or type" /></td>' +
                 '<td><input class="inv-input" data-field="c" type="text" placeholder="Category" /></td>' +
                 '<td><input class="inv-input narrow" data-field="p" type="text" placeholder="0.00" /></td>' +
                 '<td><input class="inv-input narrow" data-field="s" type="number" min="0" value="0" /></td>' +
@@ -375,7 +378,7 @@
                 return;
             }
 
-            var lines = ["Item,Category,Price,Stock,Status"];
+            var lines = ["Item,Barcode,Category,Price,Stock,Status"];
 
             for (const row of rows) {
                 // Values come from the loaded products, so this works on both the
@@ -388,6 +391,7 @@
                 var badge = row.querySelector(".badge");
                 lines.push([
                     csvCell(item ? item.name : row.textContent),
+                    csvCell(item && item.barcode ? item.barcode : ""),
                     csvCell(item ? item.category : row.getAttribute("data-cat")),
                     csvCell(item ? Api.round2(item.price).toFixed(2) : ""),
                     csvCell(item ? item.stock : ""),

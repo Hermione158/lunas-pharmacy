@@ -390,6 +390,12 @@ body {
     max-width: 110px;
 }
 
+.inv-input.barcode-input {
+    max-width: 170px;
+    font-family: Consolas, "Courier New", monospace;
+    font-size: 13px;
+}
+
 /* Row actions */
 .row-actions {
     display: flex;
