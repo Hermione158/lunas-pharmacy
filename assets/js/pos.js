@@ -285,19 +285,7 @@
             return;
         }
 
-        var sale = result.sale;
-        var lines = sale.items.map(function (it) {
-            return it.name + "  x" + it.qty + "  =  " + currency(it.total);
-        }).join("\n");
-
-        var discountLine = sale.discountPct > 0
-            ? Api.round2(sale.discountPct) + "%  (-" + currency(sale.discount) + ")"
-            : currency(sale.discount);
-
-        alert("RECEIPT\nLuna's Pharmacy\n" + sale.txNo + "\n\n" + lines +
-            "\n\nGROSS SALES: " + currency(sale.gross) +
-            "\nDISCOUNT: " + discountLine +
-            "\nNET SALES: " + currency(sale.net));
+        showReceipt(result.sale);
 
         cart = {};
         discountInput.value = "";
@@ -337,6 +325,73 @@
         products.forEach(function (p) {
             byId[p.id] = p;
             if (p.barcode) byBarcode[p.barcode] = p;
+        });
+    }
+
+    // --- Receipt ---
+    var receiptOverlay = document.getElementById("receipt-overlay");
+
+    // Thermal-style amounts: the peso sign sits right against the digits.
+    function receiptMoney(n) {
+        return "₱" + Api.round2(n).toFixed(2);
+    }
+
+    function pad2(n) {
+        return n < 10 ? "0" + n : String(n);
+    }
+
+    // "10/19/2026 04:10 PM" - the exact moment the sale was saved.
+    function receiptDate(iso) {
+        var d = new Date(iso);
+        if (isNaN(d.getTime())) d = new Date();
+        var hours = d.getHours();
+        var suffix = hours >= 12 ? "PM" : "AM";
+        hours = hours % 12 || 12;
+        return pad2(d.getMonth() + 1) + "/" + pad2(d.getDate()) + "/" + d.getFullYear() +
+            "  " + pad2(hours) + ":" + pad2(d.getMinutes()) + " " + suffix;
+    }
+
+    function showReceipt(sale) {
+        if (!receiptOverlay) return;
+
+        document.getElementById("receipt-datetime").textContent = receiptDate(sale.date);
+        document.getElementById("receipt-tx").textContent = sale.txNo;
+
+        var itemsEl = document.getElementById("receipt-items");
+        itemsEl.innerHTML = "";
+        sale.items.forEach(function (it) {
+            var row = document.createElement("div");
+            row.className = "receipt-item";
+            var label = document.createElement("span");
+            label.className = "receipt-item-label";
+            label.textContent = it.qty + "x " + it.name;
+            var amount = document.createElement("span");
+            amount.textContent = receiptMoney(it.total);
+            row.appendChild(label);
+            row.appendChild(amount);
+            itemsEl.appendChild(row);
+        });
+
+        document.getElementById("receipt-subtotal").textContent = receiptMoney(sale.gross);
+        document.getElementById("receipt-discount-label").textContent = sale.discountPct > 0
+            ? "Discount (" + Api.round2(sale.discountPct) + "%)"
+            : "Discount";
+        document.getElementById("receipt-discount").textContent = receiptMoney(sale.discount);
+        document.getElementById("receipt-total").textContent = receiptMoney(sale.net);
+
+        receiptOverlay.hidden = false;
+    }
+
+    var printBtn = document.getElementById("receipt-print-btn");
+    if (printBtn) {
+        printBtn.addEventListener("click", function () { window.print(); });
+    }
+
+    var closeBtn = document.getElementById("receipt-close-btn");
+    if (closeBtn) {
+        closeBtn.addEventListener("click", function () {
+            receiptOverlay.hidden = true;
+            if (scanInput) scanInput.focus();
         });
     }
 

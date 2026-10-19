@@ -57,6 +57,33 @@
         </aside>
     </main>
 
+    <div id="receipt-overlay" class="receipt-overlay" hidden>
+        <div class="receipt-sheet" id="receipt">
+            <img class="receipt-logo" src="assets/images/logo.png" alt="" />
+            <div class="receipt-name">LUNA PHARMACY</div>
+            <div class="receipt-address">
+                Francisco Delos Santos Bldg.,<br />
+                COR Santiago Street, Abangan Sur,<br />
+                Marilao, Bulacan, Philippines
+            </div>
+            <div class="receipt-datetime" id="receipt-datetime"></div>
+            <div class="receipt-tx" id="receipt-tx"></div>
+            <div class="receipt-rule"></div>
+            <div class="receipt-heading">ITEMS PURCHASED</div>
+            <div class="receipt-items" id="receipt-items"></div>
+            <div class="receipt-rule"></div>
+            <div class="receipt-row"><span>Subtotal</span><span id="receipt-subtotal"></span></div>
+            <div class="receipt-row"><span id="receipt-discount-label">Discount</span><span id="receipt-discount"></span></div>
+            <div class="receipt-row receipt-total"><span>Total</span><span id="receipt-total"></span></div>
+            <div class="receipt-rule"></div>
+            <p class="receipt-message">STAY HEALTHY AND VISIT US AGAIN!</p>
+        </div>
+        <div class="receipt-actions">
+            <button type="button" id="receipt-print-btn" class="btn-checkout">Print Receipt</button>
+            <button type="button" id="receipt-close-btn" class="btn-clear">New Sale</button>
+        </div>
+    </div>
+
     <script src="assets/js/api.js"></script>
     <script src="assets/js/pos.js"></script>
 </body>
