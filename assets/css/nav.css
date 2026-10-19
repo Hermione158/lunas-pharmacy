@@ -1,3 +1,5 @@
+@import url("store.css");
+
 /* ==========================================================================
    Shared navigation + footer polish
    Loaded AFTER each page's own stylesheet so every page behaves the same.

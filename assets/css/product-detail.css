@@ -131,7 +131,7 @@ a {
 
 .product-display-card {
     background: rgba(255, 255, 255, 0.7);
-    border-radius: 34px;
+    border-radius: var(--radius-card, 24px);
     padding: 40px;
     width: 100%;
     max-width: 628px;
@@ -143,8 +143,8 @@ a {
 }
 
 .card-image-wrapper {
-    background: #e6e6e6;
-    border-radius: 25px;
+    background: var(--tile, #f7eef2);
+    border-radius: 18px;
     width: 100%;
     height: 100%;
     display: flex;
@@ -156,7 +156,7 @@ a {
 .card-image-wrapper img {
     width: 100%;
     height: 100%;
-    object-fit: cover;
+    object-fit: contain;
 }
 
 /* Product Information Styles */
@@ -347,7 +347,8 @@ a {
     inset: 0;
     width: 100%;
     height: 100%;
-    object-fit: cover;
+    object-fit: contain;
+    padding: 10px;
     opacity: 0;
     visibility: hidden;
     transition: opacity 0.3s ease;
@@ -405,4 +406,56 @@ a {
     font-size: 14px;
     font-weight: 600;
     white-space: nowrap;
+}
+/* ---- Responsive: stack the gallery above the details on smaller screens ---- */
+@media (max-width: 1024px) {
+    .product-detail-container {
+        gap: 32px;
+    }
+
+    .product-display-card {
+        height: 460px;
+    }
+
+    .product-title {
+        font-size: 38px;
+    }
+
+    .brand-subtitle {
+        font-size: 26px;
+    }
+}
+
+@media (max-width: 768px) {
+    .product-detail-container {
+        flex-direction: column;
+        gap: 24px;
+    }
+
+    .product-display-card {
+        height: auto;
+        aspect-ratio: 1 / 1;
+        max-width: 100%;
+        padding: 18px;
+    }
+
+    .product-info {
+        min-width: 0;
+        max-width: 100%;
+    }
+
+    .product-title {
+        font-size: 30px;
+    }
+
+    .brand-subtitle {
+        font-size: 21px;
+        letter-spacing: -0.02em;
+    }
+
+    .info-group p,
+    .info-group li {
+        font-size: 16px;
+        text-align: left;
+    }
 }
