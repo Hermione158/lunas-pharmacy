@@ -485,3 +485,92 @@ body {
         padding: 10px 0;
     }
 }
+
+/* --- Barcode labels --- */
+.label-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, 50mm);
+    gap: 4mm;
+    justify-content: start;
+}
+
+.label-card {
+    width: 50mm;
+    height: 25mm;
+    box-sizing: border-box;
+    padding: 1.5mm 2mm;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5mm;
+    background: #ffffff;
+    border: 1px dashed #c8b2d6;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.label-name {
+    font-size: 7.5pt;
+    font-weight: 700;
+    line-height: 1.15;
+    color: #1e1e1e;
+    max-height: 2.3em;
+    overflow: hidden;
+}
+
+.label-price {
+    font-size: 8pt;
+    font-weight: 700;
+    color: #382449;
+}
+
+.label-barcode {
+    display: block;
+    width: 100%;
+    height: 8.5mm;
+    margin-top: auto;
+}
+
+.label-code {
+    font-family: Consolas, "Courier New", monospace;
+    font-size: 7pt;
+    letter-spacing: 0.5px;
+    text-align: center;
+    color: #1e1e1e;
+}
+
+@media print {
+    @page {
+        size: A4;
+        margin: 8mm;
+    }
+
+    body {
+        background: #ffffff;
+    }
+
+    .inv-header,
+    .inv-page-head,
+    .inv-toolbar,
+    #label-empty {
+        display: none !important;
+    }
+
+    .inv-main {
+        padding: 0;
+        margin: 0;
+        max-width: none;
+        gap: 0;
+    }
+
+    .label-grid {
+        grid-template-columns: repeat(3, 50mm);
+        gap: 3mm;
+    }
+
+    .label-card {
+        border: 1px dashed #999999;
+        border-radius: 0;
+        break-inside: avoid;
+        page-break-inside: avoid;
+    }
+}
