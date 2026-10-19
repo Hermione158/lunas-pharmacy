@@ -222,6 +222,16 @@
         }
         if (!isNew && !id) return;
 
+        var shownName = isNew ? data.name : (row.getAttribute("data-name") || data.name);
+        var goAhead = await showConfirm({
+            title: isNew ? "Add this item?" : "Save this item?",
+            message: isNew
+                ? "Add \"" + data.name + "\" to the inventory?"
+                : "Save changes to \"" + shownName + "\"?",
+            confirmText: isNew ? "Yes, Add" : "Yes, Save"
+        });
+        if (!goAhead) return;
+
         try {
             if (isNew) {
                 await Api.addProduct({ name: data.name, barcode: data.barcode, category: data.category, price: data.price, stock: data.stock, image: "" });
@@ -249,7 +259,12 @@
                 var id = Number(row.getAttribute("data-id"));
                 if (!id) return;
                 var name = row.getAttribute("data-name") || readRow(row).name;
-                if (!confirm("Remove " + name + " from the inventory?")) return;
+                var goAhead = await showConfirm({
+                    title: "Remove this item?",
+                    message: "Remove \"" + name + "\" from the inventory? This cannot be undone.",
+                    confirmText: "Yes, Remove"
+                });
+                if (!goAhead) return;
 
                 try {
                     await Api.deleteProduct(id);
@@ -282,6 +297,13 @@
                 flash("There is nothing to save.");
                 return;
             }
+
+            var goAhead = await showConfirm({
+                title: "Save all changes?",
+                message: "Save " + items.length + " item(s) to the inventory?",
+                confirmText: "Yes, Save All"
+            });
+            if (!goAhead) return;
 
             var label = saveAllBtn.textContent;
             saveAllBtn.disabled = true;
@@ -339,7 +361,12 @@
     var importBtn = document.getElementById("import-catalog");
     if (importBtn && table) {
         importBtn.addEventListener("click", async function () {
-            if (!confirm("Import the sample medicine list?\n\nItems you already have are kept, and every imported item starts at 0 stock, so nothing can be sold until you add stock.")) return;
+            var goAhead = await showConfirm({
+                title: "Import the sample catalog?",
+                message: "Items you already have are kept, and every imported item starts at 0 stock, so nothing can be sold until you add stock.",
+                confirmText: "Yes, Import"
+            });
+            if (!goAhead) return;
 
             var label = importBtn.textContent;
             importBtn.disabled = true;
@@ -368,7 +395,7 @@
             return /[",\n\r]/.test(text) ? '"' + text.replace(/"/g, '""') + '"' : text;
         }
 
-        exportBtn.addEventListener("click", function () {
+        exportBtn.addEventListener("click", async function () {
             // Only the rows the search box and category chip left visible.
             var rows = Array.prototype.slice.call(table.querySelectorAll("tbody tr"))
                 .filter(function (row) { return row.style.display !== "none"; });
@@ -377,6 +404,13 @@
                 flash("There is nothing to export.");
                 return;
             }
+
+            var goAhead = await showConfirm({
+                title: "Export the inventory?",
+                message: "Export " + rows.length + " visible item(s) as a CSV file?",
+                confirmText: "Yes, Export"
+            });
+            if (!goAhead) return;
 
             var lines = ["Item,Barcode,Category,Price,Stock,Status"];
 

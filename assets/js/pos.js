@@ -272,6 +272,20 @@
             return sum + cart[k].qty * cart[k].price;
         }, 0));
 
+        var units = keys.reduce(function (sum, k) { return sum + cart[k].qty; }, 0);
+        var pct = readDiscountPct();
+        var off = discountAmount(gross, pct);
+        var total = Api.round2(gross - off);
+
+        var detail = units + " item(s) - Total " + currency(total) +
+            (pct > 0 ? " (after " + Api.round2(pct) + "% discount)" : "");
+        var goAhead = await showConfirm({
+            title: "Checkout this sale?",
+            message: detail,
+            confirmText: "Yes, Checkout"
+        });
+        if (!goAhead) return;
+
         var result;
         try {
             result = await Api.checkout({
@@ -293,7 +307,16 @@
         renderCart();
     });
 
-    document.getElementById("clear-btn").addEventListener("click", function () {
+    document.getElementById("clear-btn").addEventListener("click", async function () {
+        if (Object.keys(cart).length > 0) {
+            var goAhead = await showConfirm({
+                title: "Clear the current sale?",
+                message: "All items in the cart will be removed.",
+                confirmText: "Yes, Clear"
+            });
+            if (!goAhead) return;
+        }
+
         cart = {};
         discountInput.value = "";
         renderCart();

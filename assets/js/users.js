@@ -123,7 +123,13 @@
 
         var user = users.find(function (u) { return String(u.id) === row.getAttribute("data-id"); });
         if (!user) return;
-        if (!confirm("Delete the account \"" + user.username + "\"?")) return;
+
+        var goAhead = await showConfirm({
+            title: "Delete this account?",
+            message: "Delete the account \"" + user.username + "\"? This cannot be undone.",
+            confirmText: "Yes, Delete"
+        });
+        if (!goAhead) return;
 
         try {
             await Api.deleteUser(user.id);
