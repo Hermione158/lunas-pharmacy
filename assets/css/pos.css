@@ -367,6 +367,13 @@ body {
     font-size: 15px;
 }
 
+.barcode-note {
+    margin: 0;
+    font-size: 12.5px;
+    line-height: 1.4;
+    color: #6d5a75;
+}
+
 .barcode-actions {
     display: flex;
     gap: 10px;
@@ -385,6 +392,42 @@ body {
     font-size: 14px;
     font-weight: 600;
     color: #4a3550;
+}
+
+.camera-note {
+    margin: 0;
+    font-size: 12.5px;
+    line-height: 1.4;
+    color: #6d5a75;
+}
+
+.camera-zoom {
+    position: absolute;
+    right: 10px;
+    bottom: 10px;
+    display: flex;
+    gap: 8px;
+}
+
+.camera-zoom-btn {
+    width: 40px;
+    height: 40px;
+    border: none;
+    border-radius: 50%;
+    background: rgba(56, 36, 73, 0.82);
+    color: #ffffff;
+    font-size: 22px;
+    font-weight: 700;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.camera-zoom-btn:hover {
+    background: #382449;
+}
+
+.camera-zoom-btn[hidden] {
+    display: none;
 }
 
 .camera-status.ok {

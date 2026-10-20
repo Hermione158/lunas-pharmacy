@@ -72,8 +72,13 @@
                     <span class="guide-c bl"></span>
                     <span class="guide-c br"></span>
                 </div>
+                <div class="camera-zoom">
+                    <button type="button" id="camera-zoom-out" class="camera-zoom-btn" title="Zoom out" aria-label="Zoom out">&minus;</button>
+                    <button type="button" id="camera-zoom-in" class="camera-zoom-btn" title="Zoom in" aria-label="Zoom in">+</button>
+                </div>
             </div>
             <p id="camera-status" class="camera-status">Hold the barcode about 15 cm from the camera, inside the frame.</p>
+            <p class="camera-note">Point the camera at the sticker on the medicine or the barcode on the box. A camera cannot read its own screen.</p>
             <div class="camera-actions">
                 <button type="button" id="camera-close-btn" class="btn-clear">Close</button>
             </div>
@@ -85,6 +90,7 @@
             <h2 class="barcode-name" id="barcode-name"></h2>
             <div class="barcode-box" id="barcode-box"></div>
             <div class="barcode-code" id="barcode-code"></div>
+            <p class="barcode-note">For a USB reader, or to print a sticker. Point a camera at the item's own barcode, not at this screen.</p>
             <div class="barcode-actions">
                 <button type="button" id="barcode-print-btn" class="btn-checkout">Print this label</button>
                 <button type="button" id="barcode-close-btn" class="btn-clear">Close</button>

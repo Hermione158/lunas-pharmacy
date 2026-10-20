@@ -491,28 +491,32 @@
     }
 
     // One place that decides what a scanned code means. The keyboard reader and
-    // the camera both come here, so they behave exactly the same.
+    // the camera both come here, so they behave exactly the same. The answer is
+    // returned so the camera window can show it too.
     function handleScanCode(code) {
         var text = String(code || "").trim();
-        if (!text) return false;
+        if (!text) return { ok: false, message: "" };
 
         var product = byBarcode[text];
         if (!product) {
-            scanFeedback("No product with barcode " + text + ". Check the sticker, or save that code on the item in Update Inventory.", "error");
+            var missing = "No product with barcode " + text + ". Check the sticker, or save that code on the item in Update Inventory.";
+            scanFeedback(missing, "error");
             playBeep("error");
-            return false;
+            return { ok: false, message: missing };
         }
         if (stockLeftFor(product) <= 0) {
-            scanFeedback("No more stock available for " + product.name + ".", "warn");
+            var empty = "No more stock available for " + product.name + ".";
+            scanFeedback(empty, "warn");
             playBeep("error");
-            return false;
+            return { ok: false, message: empty };
         }
 
         addToCart(product);
         var qty = cart[product.id] ? cart[product.id].qty : 0;
-        scanFeedback("Added " + product.name + " - now " + qty + " in the sale.", "ok");
+        var added = "Added " + product.name + " - now " + qty + " in the sale.";
+        scanFeedback(added, "ok");
         playBeep("ok");
-        return true;
+        return { ok: true, message: added };
     }
 
     if (scanInput) {
@@ -529,17 +533,26 @@
     }
 
     // --- Scanning with the camera ---
-    // Works with a laptop camera and with a phone camera. The code is read by
-    // ZXing, which understands the Code 128 stickers from the Labels page and
-    // the EAN/UPC codes printed on the boxes.
+    // Works with a laptop camera and with a phone camera. Chrome, Edge and
+    // Android have their own scanner, which is the best at reading small
+    // barcodes; everywhere else ZXing does the work.
     var cameraOverlay = document.getElementById("camera-overlay");
     var cameraVideo = document.getElementById("camera-video");
     var cameraStatus = document.getElementById("camera-status");
     var cameraBtn = document.getElementById("camera-btn");
+    var cameraZoomInBtn = document.getElementById("camera-zoom-in");
+    var cameraZoomOutBtn = document.getElementById("camera-zoom-out");
     var cameraReader = null;
     var cameraControls = null;
+    var cameraStream = null;
+    var cameraTrack = null;
+    var cameraZoom = 0;
+    var nativeDetector = null;
+    var nativeTimer = null;
+    var closeTimer = null;
     var lastCameraCode = "";
     var lastCameraTime = 0;
+    var lastCameraResult = null;
 
     function setCameraStatus(text, kind) {
         if (!cameraStatus) return;
@@ -547,7 +560,64 @@
         cameraStatus.className = "camera-status" + (kind ? " " + kind : "");
     }
 
+    // Not every camera can zoom, so the buttons only show when it can.
+    function zoomRange() {
+        var caps = null;
+        try {
+            caps = cameraTrack && cameraTrack.getCapabilities ? cameraTrack.getCapabilities() : null;
+        } catch (e) {
+            caps = null;
+        }
+        if (!caps || !caps.zoom) return null;
+        return {
+            min: caps.zoom.min === undefined ? 1 : caps.zoom.min,
+            max: caps.zoom.max === undefined ? 1 : caps.zoom.max
+        };
+    }
+
+    function updateZoomButtons() {
+        var has = !!zoomRange();
+        [cameraZoomInBtn, cameraZoomOutBtn].forEach(function (btn) {
+            if (!btn) return;
+            btn.hidden = !has;
+            btn.disabled = !has;
+        });
+    }
+
+    // Level 0 is the widest view, level 1 is as close as the camera allows.
+    function applyZoom(level) {
+        var range = zoomRange();
+        if (!range || !cameraTrack) return false;
+        var value = range.min + (range.max - range.min) * level;
+        try {
+            var done = cameraTrack.applyConstraints({ advanced: [{ zoom: value }] });
+            if (done && done.catch) done.catch(function () { });
+            cameraZoom = level;
+            return true;
+        } catch (e) {
+            return false;
+        }
+    }
+
+    function cameraSize() {
+        var settings = null;
+        try {
+            settings = cameraTrack && cameraTrack.getSettings ? cameraTrack.getSettings() : null;
+        } catch (e) {
+            settings = null;
+        }
+        var width = settings && settings.width ? settings.width : (cameraVideo && cameraVideo.videoWidth) || 0;
+        var height = settings && settings.height ? settings.height : (cameraVideo && cameraVideo.videoHeight) || 0;
+        return (width || "?") + "x" + (height || "?");
+    }
+
     function stopCameraScan() {
+        clearTimeout(closeTimer);
+        if (nativeTimer) {
+            clearInterval(nativeTimer);
+            nativeTimer = null;
+        }
+        nativeDetector = null;
         try {
             if (cameraControls && cameraControls.stop) cameraControls.stop();
         } catch (e) { /* the reader is already gone */ }
@@ -556,6 +626,15 @@
         } catch (e) { /* the reader is already gone */ }
         cameraControls = null;
         cameraReader = null;
+        if (cameraStream && cameraStream.getTracks) {
+            try {
+                cameraStream.getTracks().forEach(function (track) { track.stop(); });
+            } catch (e) { /* the stream is already closed */ }
+        }
+        cameraStream = null;
+        cameraTrack = null;
+        cameraZoom = 0;
+        updateZoomButtons();
         if (cameraOverlay) cameraOverlay.hidden = true;
         if (cameraVideo) {
             try {
@@ -566,24 +645,82 @@
         if (scanInput) scanInput.focus();
     }
 
-    function startCameraScan() {
-        if (!cameraOverlay) return;
+    // A code the camera read. The answer is shown inside the camera window,
+    // because the message under the scan box is hidden behind this window.
+    function onCameraCode(text) {
+        if (!text) return;
 
+        // The camera reads the same sticker many times a second. A good code
+        // is taken once; a wrong code is only complained about once in a
+        // while, so the error does not keep repeating.
+        var now = Date.now();
+        if (text === lastCameraCode) {
+            var quiet = lastCameraResult === "bad" ? 4000 : 1200;
+            if (now - lastCameraTime < quiet) return;
+        }
+        lastCameraCode = text;
+        lastCameraTime = now;
+
+        var result = handleScanCode(text);
+        lastCameraResult = result.ok ? "ok" : "bad";
+        setCameraStatus(result.message, result.ok ? "ok" : "error");
+
+        if (result.ok) {
+            // Close the camera so the sale can be seen.
+            clearTimeout(closeTimer);
+            closeTimer = setTimeout(function () { stopCameraScan(); }, 900);
+        }
+    }
+
+    // The browser's own scanner, when it has one.
+    function runNativeDetect() {
+        if (!nativeDetector || !cameraVideo || !cameraOverlay || cameraOverlay.hidden) return;
+        try {
+            var found = nativeDetector.detect(cameraVideo);
+            if (found && found.then) {
+                found.then(function (codes) {
+                    if (!codes || !codes.length) return;
+                    var value = codes[0].rawValue || codes[0].raw_value;
+                    onCameraCode(value);
+                }).catch(function () { /* nothing readable in this frame */ });
+            }
+        } catch (e) { /* the picture is not ready yet */ }
+    }
+
+    async function startNativeDetector() {
+        var formats = null;
+        try {
+            formats = await window.BarcodeDetector.getSupportedFormats();
+        } catch (e) {
+            formats = null;
+        }
+        if (!formats || formats.indexOf("code_128") === -1) {
+            startZxingScan();
+            return;
+        }
+
+        var wanted = ["code_128", "ean_13", "ean_8", "upc_a", "upc_e"].filter(function (f) {
+            return formats.indexOf(f) !== -1;
+        });
+        try {
+            nativeDetector = new window.BarcodeDetector({ formats: wanted });
+        } catch (e) {
+            nativeDetector = null;
+        }
+        if (!nativeDetector) {
+            startZxingScan();
+            return;
+        }
+        nativeTimer = setInterval(runNativeDetect, 150);
+    }
+
+    // The reading library, used when the browser has no scanner of its own.
+    function startZxingScan() {
         if (!window.ZXing || !window.ZXing.BrowserMultiFormatReader) {
-            cameraOverlay.hidden = false;
             setCameraStatus("The camera scanner could not be loaded. Refresh the page and try again.", "error");
             playBeep("error");
             return;
         }
-        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-            cameraOverlay.hidden = false;
-            setCameraStatus("This browser cannot use the camera. Please use a barcode reader instead.", "error");
-            playBeep("error");
-            return;
-        }
-
-        cameraOverlay.hidden = false;
-        setCameraStatus("Hold the barcode about 15 cm from the camera, inside the frame.", "");
 
         var hints = new Map();
         hints.set(window.ZXing.DecodeHintType.POSSIBLE_FORMATS, [
@@ -597,6 +734,34 @@
 
         cameraReader = new window.ZXing.BrowserMultiFormatReader(hints, 120);
 
+        var started = cameraReader.decodeFromStream(cameraStream, cameraVideo, function (result) {
+            if (!result) return;
+            onCameraCode(result.getText ? result.getText() : "");
+        });
+
+        if (started && started.then) {
+            started.then(function (controls) {
+                cameraControls = controls;
+            }).catch(function () {
+                setCameraStatus("The camera could not be started. Allow camera access and try again.", "error");
+                playBeep("error");
+            });
+        }
+    }
+
+    async function startCameraScan() {
+        if (!cameraOverlay) return;
+
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            cameraOverlay.hidden = false;
+            setCameraStatus("This browser cannot use the camera. Please use a barcode reader instead.", "error");
+            playBeep("error");
+            return;
+        }
+
+        cameraOverlay.hidden = false;
+        setCameraStatus("Hold the barcode about 15 cm from the camera, inside the frame.", "");
+
         // Ask for a sharp picture. The camera normally hands over 640x480,
         // which is far too small to read the little sticker on a medicine.
         // "environment" is the back camera of a phone; a laptop only has the
@@ -609,30 +774,46 @@
             }
         };
 
-        var started = cameraReader.decodeFromConstraints(constraints, cameraVideo, function (result) {
-            if (!result) return;
-            var text = result.getText ? result.getText() : "";
-            if (!text) return;
-
-            // The camera reads the same sticker many times a second, so one
-            // sticker is only taken once.
-            var now = Date.now();
-            if (text === lastCameraCode && now - lastCameraTime < 1200) return;
-            lastCameraCode = text;
-            lastCameraTime = now;
-
-            setCameraStatus("Scanned " + text, "ok");
-            handleScanCode(text);
-        });
-
-        if (started && started.then) {
-            started.then(function (controls) {
-                cameraControls = controls;
-            }).catch(function () {
-                setCameraStatus("The camera could not be started. Allow camera access and try again.", "error");
-                playBeep("error");
-            });
+        var stream = null;
+        try {
+            stream = await navigator.mediaDevices.getUserMedia(constraints);
+        } catch (err) {
+            setCameraStatus("The camera could not be started. Allow camera access and try again.", "error");
+            playBeep("error");
+            return;
         }
+
+        cameraStream = stream;
+        cameraTrack = stream.getVideoTracks ? stream.getVideoTracks()[0] : null;
+        if (cameraVideo) {
+            cameraVideo.srcObject = stream;
+            try {
+                await cameraVideo.play();
+            } catch (e) { /* the video starts by itself */ }
+        }
+
+        // Zooming in is what makes a small sticker readable on a laptop webcam.
+        updateZoomButtons();
+        applyZoom(0.4);
+        setCameraStatus("Camera " + cameraSize() + ". Hold the barcode about 15 cm away, inside the frame.", "");
+
+        if (window.BarcodeDetector) {
+            startNativeDetector();
+        } else {
+            startZxingScan();
+        }
+    }
+
+    if (cameraZoomInBtn) {
+        cameraZoomInBtn.addEventListener("click", function () {
+            applyZoom(Math.min(1, cameraZoom + 0.2));
+        });
+    }
+
+    if (cameraZoomOutBtn) {
+        cameraZoomOutBtn.addEventListener("click", function () {
+            applyZoom(Math.max(0, cameraZoom - 0.2));
+        });
     }
 
     if (cameraBtn) {
