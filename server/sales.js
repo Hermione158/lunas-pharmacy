@@ -184,9 +184,10 @@ async function deadStock(pool, where, params) {
     };
 }
 
-// A shelf with this many on it (or fewer) is worth restocking even when the
-// item sells slowly.
-const LOW_STOCK = 10;
+// A shelf with fewer of these on it (or less than this) is worth restocking
+// even when the item sells slowly. This is the same number the product list
+// calls "low stock".
+const LOW_STOCK = 20;
 
 // How fast each item is selling, next to the stock that is left. The days of
 // cover are worked out on the page. Only the shelves that need attention come
@@ -204,7 +205,7 @@ async function salesVelocity(pool) {
         "FROM products p LEFT JOIN sale_items si ON si.product_id = p.id " +
         "LEFT JOIN sales s ON s.id = si.sale_id AND s.created_at >= ? " +
         "GROUP BY p.id, p.name, p.category, p.stock" +
-        ") t WHERE t.stock <= ? OR " +
+        ") t WHERE t.stock < ? OR " +
         "(GREATEST(t.sold30 / 30.0, t.sold7 / 7.0) > 0 AND t.stock / GREATEST(t.sold30 / 30.0, t.sold7 / 7.0) < 31) " +
         "ORDER BY CASE WHEN GREATEST(t.sold30 / 30.0, t.sold7 / 7.0) > 0 " +
         "THEN t.stock / GREATEST(t.sold30 / 30.0, t.sold7 / 7.0) ELSE 999999 END, t.stock ASC " +

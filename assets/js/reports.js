@@ -590,10 +590,16 @@
     // empty within a month at the speed it is selling right now. The speed is
     // the faster of the last 7 days and the last 30, so a busy week is never
     // hidden by a quiet month.
-    var LOW_STOCK = 10;
+
+    // One number for the whole app: the shelves the product list calls "low
+    // stock" are the same shelves this card watches.
+    function lowStockLimit() {
+        return (typeof Api !== "undefined" && Api.LOW_STOCK) ? Api.LOW_STOCK : 20;
+    }
 
     function runningOutRows(stats) {
         var velocity = Array.isArray(stats.velocity) ? stats.velocity : [];
+        var low = lowStockLimit();
 
         return velocity.map(function (v) {
             var stock = Number(v.stock) || 0;
@@ -609,7 +615,7 @@
                 days: rate > 0 ? stock / rate : Infinity
             };
         }).filter(function (v) {
-            return v.stock <= LOW_STOCK || (v.rate > 0 && v.days < 31);
+            return v.stock < low || (v.rate > 0 && v.days < 31);
         }).sort(function (a, b) {
             // Soonest to empty first. The ones that never sell come last.
             var ka = a.rate > 0 ? Math.min(a.days, 100000) : 100000;
@@ -650,7 +656,7 @@
         if (empty) empty.style.display = rows.length ? "none" : "block";
         if (note) {
             note.textContent = rows.length
-                ? "Shelves with " + LOW_STOCK + " or fewer, or that empty within a month at the faster of the last 7 days and the last 30" +
+                ? "Shelves with less than " + lowStockLimit() + ", or that empty within a month at the faster of the last 7 days and the last 30" +
                   (rows.length > 20 ? " (showing the 20 soonest of " + rows.length + ")" : "")
                 : "No shelf is running low.";
         }
