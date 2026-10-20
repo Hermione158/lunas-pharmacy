@@ -549,10 +549,10 @@
     var cameraZoom = 0;
     var nativeDetector = null;
     var nativeTimer = null;
-    var closeTimer = null;
     var lastCameraCode = "";
     var lastCameraTime = 0;
     var lastCameraResult = null;
+    var cameraGoneSince = 0;
 
     function setCameraStatus(text, kind) {
         if (!cameraStatus) return;
@@ -612,7 +612,6 @@
     }
 
     function stopCameraScan() {
-        clearTimeout(closeTimer);
         if (nativeTimer) {
             clearInterval(nativeTimer);
             nativeTimer = null;
@@ -634,6 +633,9 @@
         cameraStream = null;
         cameraTrack = null;
         cameraZoom = 0;
+        lastCameraCode = "";
+        lastCameraResult = null;
+        cameraGoneSince = 0;
         updateZoomButtons();
         if (cameraOverlay) cameraOverlay.hidden = true;
         if (cameraVideo) {
@@ -645,31 +647,37 @@
         if (scanInput) scanInput.focus();
     }
 
+    // A frame in which no barcode was seen. When the same code comes back
+    // after it was gone for a moment, it is a new item.
+    function noteFrameWithoutCode() {
+        if (!lastCameraCode) return;
+        if (!cameraGoneSince) cameraGoneSince = Date.now();
+    }
+
     // A code the camera read. The answer is shown inside the camera window,
     // because the message under the scan box is hidden behind this window.
     function onCameraCode(text) {
         if (!text) return;
 
-        // The camera reads the same sticker many times a second. A good code
-        // is taken once; a wrong code is only complained about once in a
-        // while, so the error does not keep repeating.
         var now = Date.now();
         if (text === lastCameraCode) {
-            var quiet = lastCameraResult === "bad" ? 4000 : 1200;
-            if (now - lastCameraTime < quiet) return;
+            // The same sticker is read many times a second. A good code is
+            // taken once, until the item leaves the frame; a wrong code is
+            // only complained about once in a while.
+            if (lastCameraResult === "bad") {
+                if (now - lastCameraTime < 4000) return;
+            } else {
+                var wasAway = cameraGoneSince && now - cameraGoneSince >= 700;
+                if (!wasAway) return;
+            }
         }
+        cameraGoneSince = 0;
         lastCameraCode = text;
         lastCameraTime = now;
 
         var result = handleScanCode(text);
         lastCameraResult = result.ok ? "ok" : "bad";
         setCameraStatus(result.message, result.ok ? "ok" : "error");
-
-        if (result.ok) {
-            // Close the camera so the sale can be seen.
-            clearTimeout(closeTimer);
-            closeTimer = setTimeout(function () { stopCameraScan(); }, 900);
-        }
     }
 
     // The browser's own scanner, when it has one.
@@ -679,7 +687,10 @@
             var found = nativeDetector.detect(cameraVideo);
             if (found && found.then) {
                 found.then(function (codes) {
-                    if (!codes || !codes.length) return;
+                    if (!codes || !codes.length) {
+                        noteFrameWithoutCode();
+                        return;
+                    }
                     var value = codes[0].rawValue || codes[0].raw_value;
                     onCameraCode(value);
                 }).catch(function () { /* nothing readable in this frame */ });
@@ -687,17 +698,17 @@
         } catch (e) { /* the picture is not ready yet */ }
     }
 
-    async function startNativeDetector() {
+    // Asks the browser what it can read. Chrome on Android and other phones
+    // have their own scanner, which is the best at reading small barcodes.
+    async function canUseNativeScanner() {
+        if (!window.BarcodeDetector) return false;
         var formats = null;
         try {
             formats = await window.BarcodeDetector.getSupportedFormats();
         } catch (e) {
             formats = null;
         }
-        if (!formats || formats.indexOf("code_128") === -1) {
-            startZxingScan();
-            return;
-        }
+        if (!formats || formats.indexOf("code_128") === -1) return false;
 
         var wanted = ["code_128", "ean_13", "ean_8", "upc_a", "upc_e"].filter(function (f) {
             return formats.indexOf(f) !== -1;
@@ -707,11 +718,7 @@
         } catch (e) {
             nativeDetector = null;
         }
-        if (!nativeDetector) {
-            startZxingScan();
-            return;
-        }
-        nativeTimer = setInterval(runNativeDetect, 150);
+        return !!nativeDetector;
     }
 
     // The reading library, used when the browser has no scanner of its own.
@@ -734,8 +741,14 @@
 
         cameraReader = new window.ZXing.BrowserMultiFormatReader(hints, 120);
 
+        // The library attaches the stream to the video and starts it. It must
+        // not be started beforehand, or the library waits for a "canplay" that
+        // has already passed and its reading loop never begins.
         var started = cameraReader.decodeFromStream(cameraStream, cameraVideo, function (result) {
-            if (!result) return;
+            if (!result) {
+                noteFrameWithoutCode();
+                return;
+            }
             onCameraCode(result.getText ? result.getText() : "");
         });
 
@@ -785,20 +798,26 @@
 
         cameraStream = stream;
         cameraTrack = stream.getVideoTracks ? stream.getVideoTracks()[0] : null;
-        if (cameraVideo) {
-            cameraVideo.srcObject = stream;
-            try {
-                await cameraVideo.play();
-            } catch (e) { /* the video starts by itself */ }
-        }
 
-        // Zooming in is what makes a small sticker readable on a laptop webcam.
+        // The zoom starts where the camera starts, and stays there until the
+        // cashier presses + or -.
         updateZoomButtons();
-        applyZoom(0.4);
+        applyZoom(0);
         setCameraStatus("Camera " + cameraSize() + ". Hold the barcode about 15 cm away, inside the frame.", "");
 
-        if (window.BarcodeDetector) {
-            startNativeDetector();
+        // The browser's own scanner is used when it has one. It reads the
+        // video by itself, so the video is attached here. Otherwise the
+        // reading library attaches it, which is why this happens before the
+        // video is started.
+        var native = await canUseNativeScanner();
+        if (native) {
+            if (cameraVideo) {
+                cameraVideo.srcObject = stream;
+                try {
+                    await cameraVideo.play();
+                } catch (e) { /* the video starts by itself */ }
+            }
+            nativeTimer = setInterval(runNativeDetect, 150);
         } else {
             startZxingScan();
         }
