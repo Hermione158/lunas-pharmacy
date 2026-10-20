@@ -587,7 +587,9 @@
 
     // --- What will run out, and when ---
     // A shelf is worth watching when it holds very little, or when it will
-    // empty within a month at the speed it is selling right now.
+    // empty within a month at the speed it is selling right now. The speed is
+    // the faster of the last 7 days and the last 30, so a busy week is never
+    // hidden by a quiet month.
     var LOW_STOCK = 10;
 
     function runningOutRows(stats) {
@@ -596,18 +598,22 @@
         return velocity.map(function (v) {
             var stock = Number(v.stock) || 0;
             var sold30 = Number(v.sold30) || 0;
+            var sold7 = Number(v.sold7) || 0;
+            var rate = Math.max(sold30 / 30, sold7 / 7);
             return {
                 name: v.name,
                 stock: stock,
                 sold30: sold30,
-                days: sold30 > 0 ? stock * 30 / sold30 : Infinity
+                sold7: sold7,
+                rate: rate,
+                days: rate > 0 ? stock / rate : Infinity
             };
         }).filter(function (v) {
-            return v.stock <= LOW_STOCK || (v.sold30 > 0 && v.days < 31);
+            return v.stock <= LOW_STOCK || (v.rate > 0 && v.days < 31);
         }).sort(function (a, b) {
             // Soonest to empty first. The ones that never sell come last.
-            var ka = a.sold30 > 0 ? Math.min(a.days, 100000) : 100000;
-            var kb = b.sold30 > 0 ? Math.min(b.days, 100000) : 100000;
+            var ka = a.rate > 0 ? Math.min(a.days, 100000) : 100000;
+            var kb = b.rate > 0 ? Math.min(b.days, 100000) : 100000;
             if (ka !== kb) return ka - kb;
             if (a.stock !== b.stock) return a.stock - b.stock;
             return String(a.name).localeCompare(String(b.name));
@@ -615,7 +621,7 @@
     }
 
     function runningOutStatus(v) {
-        if (v.sold30 <= 0) return { cls: "badge badge-flat", label: "not selling", days: "" };
+        if (v.rate <= 0) return { cls: "badge badge-flat", label: "not selling", days: "" };
         if (v.days < 1) return { cls: "badge badge-out", label: "gone", days: "0.0" };
         if (v.days < 7) return { cls: "badge badge-out", label: "~" + Math.round(v.days) + " days", days: v.days.toFixed(1) };
         if (v.days < 31) return { cls: "badge badge-low", label: "~" + Math.round(v.days) + " days", days: v.days.toFixed(1) };
@@ -635,6 +641,7 @@
             return "<tr>" +
                 "<td>" + esc(v.name) + "</td>" +
                 "<td>" + v.stock + "</td>" +
+                "<td>" + v.sold7 + "</td>" +
                 "<td>" + v.sold30 + "</td>" +
                 '<td><span class="' + st.cls + '">' + st.label + "</span></td>" +
                 "</tr>";
@@ -643,9 +650,9 @@
         if (empty) empty.style.display = rows.length ? "none" : "block";
         if (note) {
             note.textContent = rows.length
-                ? "Shelves with " + LOW_STOCK + " or fewer, or that empty within a month at the last 30 days' pace" +
+                ? "Shelves with " + LOW_STOCK + " or fewer, or that empty within a month at the faster of the last 7 days and the last 30" +
                   (rows.length > 20 ? " (showing the 20 soonest of " + rows.length + ")" : "")
-                : "No shelf is running low, based on the last 30 days.";
+                : "No shelf is running low.";
         }
     }
 
@@ -778,15 +785,15 @@
 
             // --- Section 6: what is running out ---
             lines.push(["Running Out Soon"].map(csvCell).join(","));
-            lines.push(["Item", "Stock", "Sold (30 days)", "Days of Cover", "Status"].map(csvCell).join(","));
+            lines.push(["Item", "Stock", "Sold (7 days)", "Sold (30 days)", "Days of Cover", "Status"].map(csvCell).join(","));
             var cover = runningOutRows(stats);
             if (cover.length) {
                 cover.forEach(function (v) {
                     var st = runningOutStatus(v);
-                    lines.push([csvCell(v.name), v.stock, v.sold30, st.days, st.label].join(","));
+                    lines.push([csvCell(v.name), v.stock, v.sold7, v.sold30, st.days, st.label].join(","));
                 });
             } else {
-                lines.push(["-", "Nothing is running out.", "", "", ""].join(","));
+                lines.push(["-", "Nothing is running out.", "", "", "", ""].join(","));
             }
             lines.push("");
 
