@@ -819,6 +819,14 @@
     var cameraGoneSince = 0;
     var cameraOpenedAt = 0;
     var cameraHintShown = false;
+    var cameraThumbCanvas = null;
+    var cameraThumbCtx = null;
+    var cameraThumbGray = null;
+
+    // How much the picture may change between two frames and still be called
+    // still. A sticker that is taken away leaves a quiet picture behind, a
+    // sticker that is being handled keeps the picture moving.
+    var CAMERA_MOTION_LIMIT = 7;
 
     function setCameraStatus(text, kind) {
         if (!cameraStatus) return;
@@ -904,6 +912,7 @@
         cameraGoneSince = 0;
         cameraOpenedAt = 0;
         cameraHintShown = false;
+        cameraThumbGray = null;
         updateZoomButtons();
         if (cameraOverlay) cameraOverlay.hidden = true;
         if (cameraVideo) {
@@ -915,10 +924,61 @@
         if (scanInput) scanInput.focus();
     }
 
+    // A small picture of the camera, used to see whether it is still or
+    // being handled. The answer is how much the picture changed since the
+    // last time it was looked at: 0 means nothing moved, 255 means
+    // everything changed. When the picture cannot be measured, nothing is
+    // said about it.
+    function measureCameraMotion() {
+        if (!cameraVideo || !cameraVideo.videoWidth || !cameraVideo.videoHeight) return null;
+        if (!cameraThumbCtx) {
+            try {
+                cameraThumbCanvas = document.createElement("canvas");
+                cameraThumbCanvas.width = 48;
+                cameraThumbCanvas.height = 27;
+                cameraThumbCtx = cameraThumbCanvas.getContext("2d");
+            } catch (e) {
+                cameraThumbCtx = null;
+            }
+            if (!cameraThumbCtx) return null;
+        }
+
+        try {
+            cameraThumbCtx.drawImage(cameraVideo, 0, 0, cameraVideo.videoWidth, cameraVideo.videoHeight, 0, 0, 48, 27);
+            var data = cameraThumbCtx.getImageData(0, 0, 48, 27).data;
+            var gray = new Uint8ClampedArray(48 * 27);
+            for (var i = 0, p = 0; i < data.length; i += 4, p++) {
+                gray[p] = (306 * data[i] + 601 * data[i + 1] + 117 * data[i + 2]) >> 10;
+            }
+            if (!cameraThumbGray) {
+                cameraThumbGray = gray;
+                return null;
+            }
+            var total = 0;
+            for (var j = 0; j < gray.length; j++) {
+                total += Math.abs(gray[j] - cameraThumbGray[j]);
+            }
+            cameraThumbGray = gray;
+            return total / gray.length;
+        } catch (e) {
+            cameraThumbGray = null;
+            return null;
+        }
+    }
+
     // A frame in which no barcode was seen. When the same code comes back
-    // after it was gone for a moment, it is a new item.
+    // after it has been gone for a moment, it is a new item.
     function noteFrameWithoutCode() {
+        // The picture is looked at every time, so that the next frame can be
+        // compared with it.
+        var motion = measureCameraMotion();
         if (!lastCameraCode) return;
+        if (motion !== null && motion > CAMERA_MOTION_LIMIT) {
+            // The picture is still moving, so the sticker is being handled
+            // and not taken away. The wait starts again.
+            cameraGoneSince = 0;
+            return;
+        }
         if (!cameraGoneSince) cameraGoneSince = Date.now();
     }
 
@@ -926,6 +986,10 @@
     // because the message under the scan box is hidden behind this window.
     function onCameraCode(text) {
         if (!text) return;
+
+        // The picture is looked at here as well, so that the next frame can
+        // be compared with this one.
+        measureCameraMotion();
 
         var now = Date.now();
         if (text === lastCameraCode) {
