@@ -64,13 +64,35 @@
     <div id="camera-overlay" class="camera-overlay" hidden>
         <div class="camera-panel">
             <h2 class="camera-title">Scan with the camera</h2>
-            <video id="camera-video" class="camera-video" playsinline muted></video>
-            <p id="camera-status" class="camera-status">Point the camera at a barcode...</p>
+            <div class="camera-video-wrap">
+                <video id="camera-video" class="camera-video" playsinline muted></video>
+                <div class="camera-guide" aria-hidden="true">
+                    <span class="guide-c tl"></span>
+                    <span class="guide-c tr"></span>
+                    <span class="guide-c bl"></span>
+                    <span class="guide-c br"></span>
+                </div>
+            </div>
+            <p id="camera-status" class="camera-status">Hold the barcode about 15 cm from the camera, inside the frame.</p>
             <div class="camera-actions">
                 <button type="button" id="camera-close-btn" class="btn-clear">Close</button>
             </div>
         </div>
     </div>
+
+    <div id="barcode-overlay" class="barcode-overlay" hidden>
+        <div class="barcode-panel" role="dialog" aria-modal="true" aria-labelledby="barcode-name">
+            <h2 class="barcode-name" id="barcode-name"></h2>
+            <div class="barcode-box" id="barcode-box"></div>
+            <div class="barcode-code" id="barcode-code"></div>
+            <div class="barcode-actions">
+                <button type="button" id="barcode-print-btn" class="btn-checkout">Print this label</button>
+                <button type="button" id="barcode-close-btn" class="btn-clear">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="barcode-print-area"></div>
 
     <div id="receipt-overlay" class="receipt-overlay" hidden>
         <div class="receipt-sheet" id="receipt">
@@ -101,6 +123,7 @@
 
     <script src="assets/js/api.js"></script>
 <script src="assets/js/confirm.js"></script>
+    <script src="assets/js/barcode.js"></script>
     <script src="assets/js/zxing.min.js"></script>
     <script src="assets/js/pos.js"></script>
 </body>

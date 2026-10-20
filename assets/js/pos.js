@@ -120,6 +120,15 @@
             addBtn.disabled = stockLeftFor(p) <= 0;
             addBtn.addEventListener("click", function () { addToCart(p); });
 
+            // Clicking the medicine itself shows its barcode big in the
+            // middle of the screen, so it is easy to scan or to print.
+            img.classList.add("product-thumb-clickable");
+            img.title = "Show the barcode of " + p.name;
+            img.addEventListener("click", function () { openBarcodeFocus(p); });
+            name.classList.add("product-name-clickable");
+            name.title = "Show the barcode of " + p.name;
+            name.addEventListener("click", function () { openBarcodeFocus(p); });
+
             info.appendChild(name);
             info.appendChild(price);
             info.appendChild(stock);
@@ -574,7 +583,7 @@
         }
 
         cameraOverlay.hidden = false;
-        setCameraStatus("Point the camera at a barcode...", "");
+        setCameraStatus("Hold the barcode about 15 cm from the camera, inside the frame.", "");
 
         var hints = new Map();
         hints.set(window.ZXing.DecodeHintType.POSSIBLE_FORMATS, [
@@ -588,9 +597,19 @@
 
         cameraReader = new window.ZXing.BrowserMultiFormatReader(hints, 120);
 
-        // No device id means "the back camera if there is one". A laptop only
-        // has the webcam, and the browser picks that one instead.
-        var started = cameraReader.decodeFromVideoDevice(undefined, cameraVideo, function (result) {
+        // Ask for a sharp picture. The camera normally hands over 640x480,
+        // which is far too small to read the little sticker on a medicine.
+        // "environment" is the back camera of a phone; a laptop only has the
+        // webcam, so the browser uses that one instead.
+        var constraints = {
+            video: {
+                facingMode: { ideal: "environment" },
+                width: { ideal: 1920 },
+                height: { ideal: 1080 }
+            }
+        };
+
+        var started = cameraReader.decodeFromConstraints(constraints, cameraVideo, function (result) {
             if (!result) return;
             var text = result.getText ? result.getText() : "";
             if (!text) return;
@@ -637,6 +656,101 @@
         if (cameraOverlay && cameraOverlay.hidden === false) {
             e.preventDefault();
             stopCameraScan();
+        }
+    });
+
+    // --- The big barcode view ---
+    // Clicking a medicine shows its barcode large in the middle of the screen,
+    // with everything else dimmed, so the focus is only on the barcode.
+    var barcodeOverlay = document.getElementById("barcode-overlay");
+    var barcodeNameEl = document.getElementById("barcode-name");
+    var barcodeBoxEl = document.getElementById("barcode-box");
+    var barcodeCodeEl = document.getElementById("barcode-code");
+    var barcodePrintBtn = document.getElementById("barcode-print-btn");
+    var barcodeCloseBtn = document.getElementById("barcode-close-btn");
+    var barcodePrintArea = document.getElementById("barcode-print-area");
+    var focusProduct = null;
+
+    function escText(value) {
+        return String(value)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#39;");
+    }
+
+    function openBarcodeFocus(p) {
+        if (!barcodeOverlay) return;
+        focusProduct = p;
+
+        if (barcodeNameEl) barcodeNameEl.textContent = p.name;
+        if (barcodeBoxEl) {
+            barcodeBoxEl.innerHTML = p.barcode
+                ? window.LunaBarcode.svg(p.barcode, "barcode-svg")
+                : '<p class="barcode-missing">This medicine has no barcode yet. Save one on the item in Update Inventory.</p>';
+        }
+        if (barcodeCodeEl) barcodeCodeEl.textContent = p.barcode || "No barcode yet";
+        if (barcodePrintBtn) barcodePrintBtn.disabled = !p.barcode;
+
+        barcodeOverlay.hidden = false;
+        if (barcodeCloseBtn) barcodeCloseBtn.focus();
+    }
+
+    function closeBarcodeFocus() {
+        if (barcodeOverlay) barcodeOverlay.hidden = true;
+        if (scanInput) scanInput.focus();
+    }
+
+    // Prints one label, much bigger than the ones on the label sheet, so it
+    // is easy to stick on the medicine and easy to read with a scanner.
+    function printBarcodeLabel(p) {
+        if (!p || !p.barcode || !barcodePrintArea) return;
+
+        barcodePrintArea.innerHTML = '<div class="print-label">' +
+            '<div class="print-label-name">' + escText(p.name) + "</div>" +
+            '<div class="print-label-price">' + currency(p.price) + "</div>" +
+            window.LunaBarcode.svg(p.barcode, "print-label-barcode") +
+            '<div class="print-label-code">' + escText(p.barcode) + "</div>" +
+            "</div>";
+
+        document.body.classList.add("printing-barcode");
+
+        var clear = function () {
+            document.body.classList.remove("printing-barcode");
+            barcodePrintArea.innerHTML = "";
+        };
+        window.addEventListener("afterprint", clear, { once: true });
+        try {
+            window.print();
+        } catch (e) {
+            // Printing is not available here; the label stays on the page.
+        }
+        setTimeout(clear, 1500);
+    }
+
+    if (barcodeCloseBtn) {
+        barcodeCloseBtn.addEventListener("click", closeBarcodeFocus);
+    }
+
+    if (barcodePrintBtn) {
+        barcodePrintBtn.addEventListener("click", function () {
+            printBarcodeLabel(focusProduct);
+        });
+    }
+
+    // Clicking the dimmed background also closes the view.
+    if (barcodeOverlay) {
+        barcodeOverlay.addEventListener("click", function (e) {
+            if (e.target === barcodeOverlay) closeBarcodeFocus();
+        });
+    }
+
+    document.addEventListener("keydown", function (e) {
+        if (e.key !== "Escape") return;
+        if (barcodeOverlay && barcodeOverlay.hidden === false) {
+            e.preventDefault();
+            closeBarcodeFocus();
         }
     });
 
