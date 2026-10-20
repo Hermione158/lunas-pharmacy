@@ -447,10 +447,47 @@
         }, 2500);
     }
 
+    // The sound of a real barcode reader, kept in the project so it plays
+    // even without a network. It is loaded once and reused.
+    var scanSound = null;
+    var scanSoundSrc = "assets/sounds/scan-beep.mp4";
+
+    function preloadScanSound() {
+        try {
+            if (!window.Audio) return;
+            scanSound = new window.Audio(scanSoundSrc);
+            scanSound.preload = "auto";
+        } catch (e) {
+            scanSound = null;
+        }
+    }
+
+    // Plays the sound of the reader. Returns true when the file started, so
+    // the made-up tone is only used when the file cannot play.
+    function playScanFile() {
+        try {
+            if (!scanSound) return false;
+            if (scanSound.volume !== undefined) scanSound.volume = 0.9;
+            try {
+                scanSound.currentTime = 0;
+            } catch (e) { /* the sound is not loaded yet */ }
+            var started = scanSound.play();
+            if (started && typeof started.then === "function") {
+                started.catch(function () {
+                    playSynthBeep("ok");
+                });
+                return true;
+            }
+        } catch (e) {
+            // The browser will not play it; the made-up tone takes over.
+        }
+        return false;
+    }
+
     // The sound a barcode reader makes: a short high "tut" when the code is
     // good, a low double buzz when something is wrong. It is made with the
     // Web Audio API, so no sound file is needed.
-    function playBeep(kind) {
+    function playSynthBeep(kind) {
         try {
             var Ctx = window.AudioContext || window.webkitAudioContext;
             if (!Ctx) return;
@@ -488,6 +525,17 @@
         } catch (e) {
             // No sound is better than a broken scan.
         }
+    }
+
+    // A good scan plays the sound of a real reader; a wrong code gets the
+    // low buzz. If the sound file cannot play, the made-up tone is used.
+    function playBeep(kind) {
+        if (kind === "error") {
+            playSynthBeep("error");
+            return;
+        }
+        if (playScanFile()) return;
+        playSynthBeep("ok");
     }
 
     // One place that decides what a scanned code means. The keyboard reader and
@@ -992,6 +1040,10 @@
         buildFilters();
         renderList();
         renderCart();
+
+        // The sound of the reader is loaded now, so the first scan is not
+        // waiting for it.
+        preloadScanSound();
 
         // The scan box is ready right away, so the first item can be scanned
         // without touching the mouse.
