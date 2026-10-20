@@ -24,8 +24,79 @@ function parseRange(req) {
     return { range: range, from: new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())) };
 }
 
+// The client tells us how far its clock is from UTC, so the buckets land on
+// the shop's own day and hour instead of the server's. Minutes ahead of UTC.
+function parseTz(req) {
+    let minutes = Number(req.query.tz);
+    if (!isFinite(minutes)) minutes = 480; // Asia/Manila
+    minutes = Math.max(-720, Math.min(840, Math.round(minutes)));
+    const sign = minutes < 0 ? "-" : "+";
+    const abs = Math.abs(minutes);
+    const hh = String(Math.floor(abs / 60)).padStart(2, "0");
+    const mm = String(abs % 60).padStart(2, "0");
+    return sign + hh + ":" + mm;
+}
+
+// How finely the sales are grouped: by the hour for today, by the day for a
+// week or a month, by the month for everything.
+function grainFor(range) {
+    if (range === "today") return "hour";
+    if (range === "all") return "month";
+    return "day";
+}
+
+function bucketExpression(grain, tz) {
+    const shifted = "CONVERT_TZ(s.created_at, '+00:00', '" + tz + "')";
+    if (grain === "hour") return "HOUR(" + shifted + ")";
+    if (grain === "month") return "DATE_FORMAT(" + shifted + ", '%Y-%m')";
+    return "DATE_FORMAT(" + shifted + ", '%Y-%m-%d')";
+}
+
+// One row per time bucket, worked out by the database so the numbers stay
+// right no matter how many millions of sales there are.
+async function salesSeries(pool, grain, tz, where, params) {
+    const bucket = bucketExpression(grain, tz);
+    const [rows] = await pool.query(
+        "SELECT " + bucket + " AS bucket, COALESCE(SUM(s.gross), 0) AS gross, " +
+        "COALESCE(SUM(s.discount), 0) AS discount, COALESCE(SUM(s.net), 0) AS net, " +
+        "COUNT(*) AS transactions FROM sales s " + where +
+        " GROUP BY bucket ORDER BY bucket LIMIT 240",
+        params
+    );
+    return rows.map(function (r) {
+        return {
+            bucket: String(r.bucket),
+            gross: round2(Number(r.gross)),
+            discount: round2(Number(r.discount)),
+            net: round2(Number(r.net)),
+            transactions: Number(r.transactions)
+        };
+    });
+}
+
+// How the money is split across the product categories.
+async function salesByCategory(pool, where, params) {
+    const [rows] = await pool.query(
+        "SELECT p.category AS category, COALESCE(SUM(si.qty), 0) AS qty, " +
+        "COALESCE(SUM(si.total), 0) AS revenue " +
+        "FROM sale_items si JOIN sales s ON s.id = si.sale_id " +
+        "JOIN products p ON p.id = si.product_id " + where +
+        " GROUP BY p.category ORDER BY revenue DESC",
+        params
+    );
+    return rows.map(function (r) {
+        return {
+            category: String(r.category || "Uncategorized"),
+            qty: Number(r.qty),
+            revenue: round2(Number(r.revenue))
+        };
+    });
+}
+
 async function listSales(req, res) {
     const { range, from } = parseRange(req);
+    const tz = parseTz(req);
+    const grain = grainFor(range);
     const pool = getPool();
     const where = from ? "WHERE s.created_at >= ?" : "";
     const params = from ? [from] : [];
@@ -56,17 +127,32 @@ async function listSales(req, res) {
         params
     );
 
+    // The graphs. They are extra, so a failure here must not take the whole
+    // report down with it.
+    let series = [];
+    let categories = [];
+    try {
+        series = await salesSeries(pool, grain, tz, where, params);
+        categories = await salesByCategory(pool, where, params);
+    } catch (err) {
+        series = [];
+        categories = [];
+    }
+
     const net = round2(Number(totals.net));
     const transactions = Number(totals.transactions);
 
     send(res, 200, {
         range: range,
+        grain: grain,
         gross: round2(Number(totals.gross)),
         discount: round2(Number(totals.discount)),
         net: net,
         transactions: transactions,
         units: Number(units.units),
         average: transactions ? round2(net / transactions) : 0,
+        series: series,
+        categories: categories,
         top: top.map(function (r) {
             return { id: r.id, name: r.name, qty: Number(r.qty), revenue: round2(Number(r.revenue)) };
         }),

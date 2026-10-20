@@ -94,7 +94,11 @@
         },
         getStats: function (range) {
             var from = rangeFrom(range);
-            var query = "?range=" + encodeURIComponent(range || "today") + (from ? "&from=" + encodeURIComponent(from) : "");
+            // Minutes ahead of UTC, so the report's buckets follow the shop's clock.
+            var tz = -new Date().getTimezoneOffset();
+            var query = "?range=" + encodeURIComponent(range || "today") +
+                (from ? "&from=" + encodeURIComponent(from) : "") +
+                "&tz=" + encodeURIComponent(String(tz));
             return request("/api/sales" + query);
         },
 

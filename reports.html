@@ -71,6 +71,24 @@
             <span class="hint" id="rep-hint"></span>
         </div>
 
+        <div class="rep-charts">
+            <div class="inv-table-wrap rep-chart-card">
+                <h3 class="rep-heading">Sales Over Time</h3>
+                <p class="rep-chart-sub" id="rep-series-note">Net sales per bucket</p>
+                <div class="rep-chart" id="rep-chart"></div>
+                <p class="rep-chart-insight" id="rep-series-insight"></p>
+                <p id="rep-chart-empty" class="no-results" style="display:none;">No sales in this period yet.</p>
+            </div>
+
+            <div class="inv-table-wrap rep-chart-card">
+                <h3 class="rep-heading">Sales by Category</h3>
+                <p class="rep-chart-sub">Share of net sales</p>
+                <div class="rep-chart rep-pie" id="rep-pie"></div>
+                <p class="rep-chart-insight" id="rep-pie-insight"></p>
+                <p id="rep-pie-empty" class="no-results" style="display:none;">No sales in this period yet.</p>
+            </div>
+        </div>
+
         <div class="inv-table-wrap">
             <h3 class="rep-heading">Most Sold Items</h3>
             <table class="inv-table" id="rep-top-table">
