@@ -43,7 +43,7 @@
             </div>
             <div class="cart-totals">
                 <div class="total-row"><span>Items</span><span id="cart-count">0</span></div>
-                <div class="total-row"><span>Gross Sales</span><span id="subtotal">₱ 0.00</span></div>
+                <div class="total-row"><span>Subtotal</span><span id="subtotal">₱ 0.00</span></div>
                 <label class="discount-row" for="discount-input">
                     <span>Discount</span>
                     <span class="discount-wrap">
@@ -52,7 +52,7 @@
                     </span>
                 </label>
                 <p class="discount-amount" id="discount-amount"></p>
-                <div class="total-row grand"><span>Net Sales</span><span id="total">₱ 0.00</span></div>
+                <div class="total-row grand"><span>Total</span><span id="total">₱ 0.00</span></div>
             </div>
             <div class="cart-actions">
                 <button type="button" id="checkout-btn" class="btn-checkout">Checkout</button>
@@ -100,6 +100,40 @@
 
     <div id="barcode-print-area"></div>
 
+    <div id="payment-overlay" class="payment-overlay" hidden>
+        <div class="payment-panel" role="dialog" aria-modal="true" aria-labelledby="payment-title">
+            <h2 class="payment-title" id="payment-title">Amount Received</h2>
+
+            <div class="payment-due">
+                <span class="payment-due-label">Total due</span>
+                <span class="payment-due-amount" id="payment-total">₱ 0.00</span>
+            </div>
+
+            <label class="payment-label" for="payment-input">Money received</label>
+            <div class="payment-input-wrap">
+                <span class="payment-prefix">₱</span>
+                <input type="text" id="payment-input" class="payment-input" inputmode="decimal" maxlength="8" autocomplete="off" aria-describedby="payment-change" />
+            </div>
+
+            <div class="payment-change" id="payment-change">Change: ₱ 0.00</div>
+
+            <div class="payment-bills" id="payment-bills">
+                <button type="button" class="payment-bill" data-amount="20">₱20</button>
+                <button type="button" class="payment-bill" data-amount="50">₱50</button>
+                <button type="button" class="payment-bill" data-amount="100">₱100</button>
+                <button type="button" class="payment-bill" data-amount="200">₱200</button>
+                <button type="button" class="payment-bill" data-amount="500">₱500</button>
+                <button type="button" class="payment-bill" data-amount="1000">₱1000</button>
+                <button type="button" class="payment-bill exact" id="payment-exact">Exact</button>
+            </div>
+
+            <div class="payment-actions">
+                <button type="button" id="payment-cancel-btn" class="btn-clear">Cancel</button>
+                <button type="button" id="payment-complete-btn" class="btn-checkout" disabled>Complete Sale</button>
+            </div>
+        </div>
+    </div>
+
     <div id="receipt-overlay" class="receipt-overlay" hidden>
         <div class="receipt-sheet" id="receipt">
             <img class="receipt-logo" src="assets/images/logo.png" alt="" />
@@ -116,8 +150,10 @@
             <div class="receipt-items" id="receipt-items"></div>
             <div class="receipt-rule"></div>
             <div class="receipt-row"><span>Subtotal</span><span id="receipt-subtotal"></span></div>
-            <div class="receipt-row"><span id="receipt-discount-label">Discount</span><span id="receipt-discount"></span></div>
-            <div class="receipt-row receipt-total"><span>Total</span><span id="receipt-total"></span></div>
+                <div class="receipt-row"><span id="receipt-discount-label">Discount</span><span id="receipt-discount"></span></div>
+                <div class="receipt-row receipt-total"><span>Total</span><span id="receipt-total"></span></div>
+                <div class="receipt-row" id="receipt-received-row"><span>Amount Received</span><span id="receipt-received"></span></div>
+                <div class="receipt-row" id="receipt-change-row"><span>Change</span><span id="receipt-change"></span></div>
             <div class="receipt-rule"></div>
             <p class="receipt-message">STAY HEALTHY AND VISIT US AGAIN!</p>
         </div>

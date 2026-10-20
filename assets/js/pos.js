@@ -270,30 +270,89 @@
     }
 
     // --- Checkout / clear ---
-    document.getElementById("checkout-btn").addEventListener("click", async function () {
-        var keys = Object.keys(cart);
-        if (keys.length === 0) {
-            alert("The sale is empty. Add a product first.");
+    // The amount received panel: the cashier says how much money came in,
+    // and the register works out the change.
+    var paymentOverlay = document.getElementById("payment-overlay");
+    var paymentTotalEl = document.getElementById("payment-total");
+    var paymentInput = document.getElementById("payment-input");
+    var paymentChangeEl = document.getElementById("payment-change");
+    var paymentCompleteBtn = document.getElementById("payment-complete-btn");
+    var paymentCancelBtn = document.getElementById("payment-cancel-btn");
+    var paymentExactBtn = document.getElementById("payment-exact");
+    var paymentDue = 0;
+    var pendingPayment = null;
+    var payingOpen = false;
+
+    function openPaymentPanel(total) {
+        if (!paymentOverlay) return;
+        paymentDue = total;
+        payingOpen = true;
+
+        if (paymentTotalEl) paymentTotalEl.textContent = currency(total);
+        if (paymentInput) paymentInput.value = total > 0 ? "" : "0";
+        if (paymentChangeEl) {
+            paymentChangeEl.textContent = "Change: " + currency(0);
+            paymentChangeEl.className = "payment-change";
+        }
+        if (paymentCompleteBtn) paymentCompleteBtn.disabled = true;
+
+        paymentOverlay.hidden = false;
+        if (paymentInput) {
+            paymentInput.focus();
+            paymentInput.select();
+        }
+    }
+
+    function closePaymentPanel() {
+        if (!paymentOverlay) return;
+        paymentOverlay.hidden = true;
+        payingOpen = false;
+        if (scanInput) scanInput.focus();
+    }
+
+    // What the cashier typed, or 0 when it is not a sensible amount.
+    function receivedAmount() {
+        var raw = String(paymentInput ? paymentInput.value : "").trim().replace(/[^0-9.]/g, "");
+        if (!raw) return 0;
+        var value = Number(raw);
+        if (!isFinite(value) || value < 0) return 0;
+        return Api.round2(value);
+    }
+
+    function updatePaymentPanel() {
+        var received = receivedAmount();
+        var change = Api.round2(received - paymentDue);
+        var enough = paymentDue > 0 ? received >= paymentDue : true;
+
+        if (paymentChangeEl) {
+            if (received <= 0) {
+                paymentChangeEl.textContent = "Change: " + currency(0);
+                paymentChangeEl.className = "payment-change";
+            } else if (enough) {
+                paymentChangeEl.textContent = "Change: " + currency(change);
+                paymentChangeEl.className = "payment-change ok";
+            } else {
+                paymentChangeEl.textContent = "Not enough - " + currency(paymentDue - received) + " short.";
+                paymentChangeEl.className = "payment-change short";
+            }
+        }
+        if (paymentCompleteBtn) paymentCompleteBtn.disabled = !enough;
+        return enough;
+    }
+
+    // The sale is saved once the cashier confirms the money received.
+    async function completeSale() {
+        var received = receivedAmount();
+        if (!(received >= paymentDue) || paymentDue <= 0) {
+            updatePaymentPanel();
             return;
         }
 
-        var gross = Api.round2(keys.reduce(function (sum, k) {
-            return sum + cart[k].qty * cart[k].price;
-        }, 0));
-
-        var units = keys.reduce(function (sum, k) { return sum + cart[k].qty; }, 0);
-        var pct = readDiscountPct();
-        var off = discountAmount(gross, pct);
-        var total = Api.round2(gross - off);
-
-        var detail = units + " item(s) - Total " + currency(total) +
-            (pct > 0 ? " (after " + Api.round2(pct) + "% discount)" : "");
-        var goAhead = await showConfirm({
-            title: "Checkout this sale?",
-            message: detail,
-            confirmText: "Yes, Checkout"
-        });
-        if (!goAhead) return;
+        var keys = Object.keys(cart);
+        if (keys.length === 0) {
+            closePaymentPanel();
+            return;
+        }
 
         var result;
         try {
@@ -308,12 +367,87 @@
             return;
         }
 
+        pendingPayment = { received: received, change: Api.round2(received - paymentDue) };
+        closePaymentPanel();
         showReceipt(result.sale);
 
         cart = {};
         discountInput.value = "";
         await loadProducts();
         renderCart();
+    }
+
+    document.getElementById("checkout-btn").addEventListener("click", function () {
+        var keys = Object.keys(cart);
+        if (keys.length === 0) {
+            alert("The sale is empty. Add a product first.");
+            return;
+        }
+
+        var gross = Api.round2(keys.reduce(function (sum, k) {
+            return sum + cart[k].qty * cart[k].price;
+        }, 0));
+
+        var off = discountAmount(gross, readDiscountPct());
+        var total = Api.round2(gross - off);
+        openPaymentPanel(total);
+    });
+
+    if (paymentInput) {
+        paymentInput.addEventListener("input", function () {
+            // Only numbers, and no more than a reasonable amount, so a
+            // barcode reader typing into this box cannot break the sale.
+            var cleaned = String(paymentInput.value).replace(/[^0-9.]/g, "").slice(0, 8);
+            if (cleaned !== paymentInput.value) paymentInput.value = cleaned;
+            updatePaymentPanel();
+        });
+
+        paymentInput.addEventListener("keydown", function (e) {
+            if (e.key !== "Enter") return;
+            e.preventDefault();
+            if (updatePaymentPanel()) completeSale();
+        });
+    }
+
+    if (paymentCompleteBtn) {
+        paymentCompleteBtn.addEventListener("click", function () {
+            completeSale();
+        });
+    }
+
+    if (paymentCancelBtn) {
+        paymentCancelBtn.addEventListener("click", closePaymentPanel);
+    }
+
+    if (paymentExactBtn) {
+        paymentExactBtn.addEventListener("click", function () {
+            if (!paymentInput) return;
+            paymentInput.value = paymentDue > 0 ? String(Api.round2(paymentDue)) : "";
+            updatePaymentPanel();
+            paymentInput.focus();
+        });
+    }
+
+    var paymentBills = document.getElementById("payment-bills");
+    if (paymentBills) {
+        paymentBills.querySelectorAll(".payment-bill[data-amount]").forEach(function (btn) {
+            btn.addEventListener("click", function () {
+                if (!paymentInput) return;
+                paymentInput.value = btn.getAttribute("data-amount");
+                updatePaymentPanel();
+                paymentInput.focus();
+            });
+        });
+    }
+
+    // Esc cancels the payment. The dimmed background does not close it:
+    // this is money, not a picture.
+    document.addEventListener("keydown", function (e) {
+        if (e.key !== "Escape") return;
+        if (payingOpen) {
+            e.preventDefault();
+            closePaymentPanel();
+        }
     });
 
     document.getElementById("clear-btn").addEventListener("click", async function () {
@@ -410,6 +544,21 @@
             : "Discount";
         document.getElementById("receipt-discount").textContent = receiptMoney(sale.discount);
         document.getElementById("receipt-total").textContent = receiptMoney(sale.net);
+
+        // The money that came in and the change that went back out. They are
+        // only shown when the payment was taken through the panel.
+        var receivedRow = document.getElementById("receipt-received-row");
+        var changeRow = document.getElementById("receipt-change-row");
+        if (pendingPayment) {
+            document.getElementById("receipt-received").textContent = receiptMoney(pendingPayment.received);
+            document.getElementById("receipt-change").textContent = receiptMoney(pendingPayment.change);
+            if (receivedRow) receivedRow.style.display = "";
+            if (changeRow) changeRow.style.display = "";
+        } else {
+            if (receivedRow) receivedRow.style.display = "none";
+            if (changeRow) changeRow.style.display = "none";
+        }
+        pendingPayment = null;
 
         receiptOverlay.hidden = false;
     }
@@ -544,6 +693,14 @@
     function handleScanCode(code) {
         var text = String(code || "").trim();
         if (!text) return { ok: false, message: "" };
+
+        // While the money is being counted, nothing may join the sale.
+        if (payingOpen) {
+            var busy = "Finish the payment first.";
+            scanFeedback(busy, "error");
+            playBeep("error");
+            return { ok: false, message: busy };
+        }
 
         var product = byBarcode[text];
         if (!product) {
