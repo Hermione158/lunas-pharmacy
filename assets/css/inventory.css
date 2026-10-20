@@ -333,6 +333,70 @@ body {
     flex-shrink: 0;
 }
 
+/* Attaching a picture to a new item */
+.inv-attach {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+    flex-wrap: wrap;
+}
+
+.inv-attach-preview {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    object-fit: contain;
+    background: #f6eef2;
+    border: 1px solid #eadfe4;
+    flex-shrink: 0;
+}
+
+.inv-attach-preview:not([src]) {
+    display: none;
+}
+
+.inv-attach-btn {
+    display: inline-block;
+    background: #ffe3ea;
+    color: #7a2a3d;
+    border-radius: 10px;
+    padding: 7px 12px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.inv-attach-btn:hover {
+    background: #ffd3de;
+}
+
+.inv-attach-name {
+    font-size: 11px;
+    color: #8a7484;
+    max-width: 140px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.inv-attach-remove {
+    background: transparent;
+    border: none;
+    color: #a24a63;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    padding: 4px 6px;
+    text-decoration: underline;
+}
+
+.inv-attach-remove:hover {
+    color: #7a2a3d;
+}
+
+
 .inv-item-name {
     font-weight: 700;
     color: #1e1e1e;

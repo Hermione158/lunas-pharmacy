@@ -48,6 +48,29 @@ function asBarcode(value) {
     return text || null;
 }
 
+// The biggest picture the API accepts, in characters of base64 data.
+// The browser shrinks a picture before it is sent, so this is a safety net.
+var MAX_IMAGE_LENGTH = 500000;
+
+// A picture is either a small image sent as a data URL, or a file name that
+// points at a picture already in the project (how the sample catalog works).
+// Returns the stored value, or null when the value is not a usable picture.
+function asImage(value) {
+    var text = value === undefined || value === null ? "" : String(value).trim();
+    if (!text) return "";
+
+    if (/^data:/i.test(text)) {
+        if (!/^data:image\/(png|jpeg|jpg|webp|gif);base64,[A-Za-z0-9+/=]+$/i.test(text)) return null;
+        if (text.length > MAX_IMAGE_LENGTH) return null;
+        return text;
+    }
+
+    // A plain file name: no spaces, no quotes, short enough for a path.
+    if (text.length > 255) return null;
+    if (/[\s"'<>]/.test(text)) return null;
+    return text;
+}
+
 // Friendly message for a UNIQUE violation, whichever column caused it.
 function duplicateError(err, name) {
     if (/barcode/i.test(String(err && err.message || ""))) {
@@ -60,4 +83,4 @@ function txNo(id) {
     return "TX-" + String(id).padStart(4, "0");
 }
 
-module.exports = { send, serverError, readBody, round2, asMoney, asStock, asBarcode, duplicateError, txNo };
+module.exports = { send, serverError, readBody, round2, asMoney, asStock, asBarcode, asImage, duplicateError, txNo };

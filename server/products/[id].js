@@ -4,7 +4,7 @@
 
 const { getPool } = require("../_lib/db");
 const { requireAdmin } = require("../_lib/auth");
-const { send, readBody, serverError, asMoney, asStock, asBarcode, duplicateError } = require("../_lib/util");
+const { send, readBody, serverError, asMoney, asStock, asBarcode, asImage, duplicateError } = require("../_lib/util");
 
 function parseId(req) {
     const id = Number(req.query.id);
@@ -24,14 +24,19 @@ async function updateProduct(req, res, id) {
     if (!existing) return send(res, 404, { error: "Item not found." });
 
     const body = readBody(req);
+    const image = body.image === undefined ? null : asImage(body.image);
     const next = {
         name: body.name === undefined ? existing.name : String(body.name).trim(),
         barcode: body.barcode === undefined ? existing.barcode : asBarcode(body.barcode),
         category: body.category === undefined ? existing.category : String(body.category).trim() || existing.category,
-        image: body.image === undefined ? existing.image : String(body.image).trim(),
+        image: body.image === undefined ? existing.image : (image === null ? existing.image : image),
         price: body.price === undefined ? existing.price : asMoney(body.price),
         stock: body.stock === undefined ? existing.stock : asStock(body.stock)
     };
+
+    if (body.image !== undefined && image === null) {
+        return send(res, 400, { error: "Attach a PNG, JPG, WEBP or GIF picture under 500 KB." });
+    }
 
     if (!next.name) return send(res, 400, { error: "Item name is required." });
     if (next.price === null) return send(res, 400, { error: "Price must be a non-negative number." });

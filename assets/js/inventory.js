@@ -32,6 +32,14 @@
     var chipsBox = document.getElementById("inv-chips");
     var activeCat = "All";
 
+    // Pictures attached to a new row, kept next to the row until it is saved.
+    var rowImages = new WeakMap();
+
+    // A file that is much larger than this is refused before it is read.
+    var MAX_ATTACH_BYTES = 3 * 1024 * 1024;
+    // The API accepts up to this many characters of picture data.
+    var MAX_ATTACH_LENGTH = 500000;
+
     function esc(value) {
         return String(value)
             .replace(/&/g, "&amp;")
@@ -210,6 +218,119 @@
         applyFilters();
     }
 
+    // --- Attached pictures ---
+    // The picture is stored with the item, so it is shrunk in the browser first
+    // and kept as a small image in a data URL.
+    function readFileAsDataUrl(file) {
+        return new Promise(function (resolve, reject) {
+            var reader = new FileReader();
+            reader.onload = function () { resolve(String(reader.result || "")); };
+            reader.onerror = function () { reject(new Error("The picture could not be read.")); };
+            reader.readAsDataURL(file);
+        });
+    }
+
+    function canDraw() {
+        var canvas = document.createElement("canvas");
+        if (!canvas.getContext) return false;
+        try {
+            return !!canvas.getContext("2d");
+        } catch (e) {
+            return false;
+        }
+    }
+
+    // Shrinks the picture to at most 640px on the long side, which keeps the
+    // stored picture small enough to load quickly in the POS.
+    function shrinkImage(file) {
+        return readFileAsDataUrl(file).then(function (dataUrl) {
+            if (!canDraw()) return dataUrl;
+            return new Promise(function (resolve) {
+                var img = new Image();
+                img.onload = function () {
+                    var w = img.naturalWidth || img.width;
+                    var h = img.naturalHeight || img.height;
+                    if (!w || !h) { resolve(dataUrl); return; }
+                    var scale = Math.min(1, 640 / Math.max(w, h));
+                    var canvas = document.createElement("canvas");
+                    canvas.width = Math.max(1, Math.round(w * scale));
+                    canvas.height = Math.max(1, Math.round(h * scale));
+                    var ctx = canvas.getContext("2d");
+                    if (!ctx) { resolve(dataUrl); return; }
+                    ctx.fillStyle = "#ffffff";
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                    var out = "";
+                    try { out = canvas.toDataURL("image/jpeg", 0.82); } catch (e) { out = ""; }
+                    resolve(out.indexOf("data:image/") === 0 ? out : dataUrl);
+                };
+                img.onerror = function () { resolve(dataUrl); };
+                img.src = dataUrl;
+            });
+        });
+    }
+
+    function showAttached(row, dataUrl, fileName) {
+        rowImages.set(row, dataUrl);
+        var preview = row.querySelector(".inv-attach-preview");
+        if (preview) preview.src = dataUrl;
+        var label = row.querySelector(".inv-attach-name");
+        if (label) label.textContent = fileName || "";
+        var remove = row.querySelector(".inv-attach-remove");
+        if (remove) remove.hidden = false;
+    }
+
+    function clearAttached(row) {
+        rowImages.delete(row);
+        var preview = row.querySelector(".inv-attach-preview");
+        if (preview) preview.removeAttribute("src");
+        var label = row.querySelector(".inv-attach-name");
+        if (label) label.textContent = "";
+        var input = row.querySelector('.inv-attach input[type="file"]');
+        if (input) input.value = "";
+        var remove = row.querySelector(".inv-attach-remove");
+        if (remove) remove.hidden = true;
+    }
+
+    if (table) {
+        table.addEventListener("change", function (e) {
+            var input = e.target;
+            if (!input || !input.matches || !input.matches('.inv-attach input[type="file"]')) return;
+            var row = input.closest ? input.closest("tr") : null;
+            if (!row) return;
+
+            var file = input.files && input.files[0];
+            if (!file) return;
+
+            if (file.size > MAX_ATTACH_BYTES) {
+                flash("That picture is too large. Pick one under 3 MB.");
+                input.value = "";
+                return;
+            }
+            if (file.type && file.type.indexOf("image/") !== 0) {
+                flash("Pick a picture file (PNG, JPG, WEBP or GIF).");
+                input.value = "";
+                return;
+            }
+
+            shrinkImage(file).then(function (dataUrl) {
+                if (!dataUrl) {
+                    flash("That picture could not be read.");
+                    return;
+                }
+                if (dataUrl.length > MAX_ATTACH_LENGTH) {
+                    flash("That picture is too large to attach. Pick a smaller one.");
+                    input.value = "";
+                    return;
+                }
+                showAttached(row, dataUrl, file.name);
+                flash("Picture attached. Press Save to keep it.");
+            }).catch(function () {
+                flash("That picture could not be read.");
+            });
+        });
+    }
+
     // --- Persisting edits ---
     async function commitRow(row) {
         var data = readRow(row);
@@ -234,7 +355,14 @@
 
         try {
             if (isNew) {
-                await Api.addProduct({ name: data.name, barcode: data.barcode, category: data.category, price: data.price, stock: data.stock, image: "" });
+                await Api.addProduct({
+                    name: data.name,
+                    barcode: data.barcode,
+                    category: data.category,
+                    price: data.price,
+                    stock: data.stock,
+                    image: rowImages.get(row) || ""
+                });
                 flash("\"" + data.name + "\" added to the inventory.");
             } else {
                 await Api.updateProduct(id, data);
@@ -255,6 +383,9 @@
 
             if (btn.classList.contains("icon-save")) {
                 await commitRow(row);
+            } else if (btn.classList.contains("inv-attach-remove")) {
+                clearAttached(row);
+                flash("Picture removed.");
             } else if (btn.classList.contains("icon-del")) {
                 var id = Number(row.getAttribute("data-id"));
                 if (!id) return;
@@ -290,7 +421,17 @@
                 var data = readRow(row);
                 var isNew = row.getAttribute("data-new") === "1";
                 if (isNew && !data.name) continue; // blank new row: nothing to save
-                items.push({ id: isNew ? null : Number(row.getAttribute("data-id")), name: data.name, barcode: data.barcode, category: data.category, price: data.price, stock: data.stock });
+                // A picture is only sent for a new item. Existing rows keep the
+                // picture they already have.
+                items.push({
+                    id: isNew ? null : Number(row.getAttribute("data-id")),
+                    name: data.name,
+                    barcode: data.barcode,
+                    category: data.category,
+                    price: data.price,
+                    stock: data.stock,
+                    image: isNew ? (rowImages.get(row) || "") : undefined
+                });
             }
 
             if (!items.length) {
@@ -337,8 +478,16 @@
             row.setAttribute("data-new", "1");
             row.setAttribute("data-cat", activeCat === "All" ? "Cardiovascular" : activeCat);
             row.innerHTML =
-                '<td><div class="inv-item">' +
-                '<input class="inv-input" data-field="n" type="text" placeholder="Item name" /></div></td>' +
+                "<td>" +
+                '<div class="inv-item">' +
+                '<input class="inv-input" data-field="n" type="text" placeholder="Item name" /></div>' +
+                '<div class="inv-attach">' +
+                '<img class="inv-attach-preview" alt="" />' +
+                '<label class="inv-attach-btn">Attach picture' +
+                '<input type="file" accept="image/png,image/jpeg,image/webp,image/gif" hidden /></label>' +
+                '<span class="inv-attach-name"></span>' +
+                '<button type="button" class="inv-attach-remove" hidden>Remove</button>' +
+                "</div></td>" +
                 '<td><input class="inv-input barcode-input" data-field="b" type="text" placeholder="Scan or type" /></td>' +
                 '<td><input class="inv-input" data-field="c" type="text" placeholder="Category" /></td>' +
                 '<td><input class="inv-input narrow" data-field="p" type="text" placeholder="0.00" /></td>' +
