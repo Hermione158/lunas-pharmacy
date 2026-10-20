@@ -807,7 +807,7 @@
     var cameraZoomInBtn = document.getElementById("camera-zoom-in");
     var cameraZoomOutBtn = document.getElementById("camera-zoom-out");
     var cameraReader = null;
-    var cameraControls = null;
+    var cameraScanTimer = null;
     var cameraStream = null;
     var cameraTrack = null;
     var cameraZoom = 0;
@@ -817,6 +817,8 @@
     var lastCameraTime = 0;
     var lastCameraResult = null;
     var cameraGoneSince = 0;
+    var cameraOpenedAt = 0;
+    var cameraHintShown = false;
 
     function setCameraStatus(text, kind) {
         if (!cameraStatus) return;
@@ -880,14 +882,14 @@
             clearInterval(nativeTimer);
             nativeTimer = null;
         }
+        if (cameraScanTimer) {
+            clearInterval(cameraScanTimer);
+            cameraScanTimer = null;
+        }
         nativeDetector = null;
-        try {
-            if (cameraControls && cameraControls.stop) cameraControls.stop();
-        } catch (e) { /* the reader is already gone */ }
         try {
             if (cameraReader) cameraReader.reset();
         } catch (e) { /* the reader is already gone */ }
-        cameraControls = null;
         cameraReader = null;
         if (cameraStream && cameraStream.getTracks) {
             try {
@@ -900,6 +902,8 @@
         lastCameraCode = "";
         lastCameraResult = null;
         cameraGoneSince = 0;
+        cameraOpenedAt = 0;
+        cameraHintShown = false;
         updateZoomButtons();
         if (cameraOverlay) cameraOverlay.hidden = true;
         if (cameraVideo) {
@@ -986,6 +990,10 @@
     }
 
     // The reading library, used when the browser has no scanner of its own.
+    // The frames are read here, not by the library, so the barcode can be
+    // cropped close and made bigger before it is looked at. A laptop camera
+    // sees a phone from far away when the phone stands upright, and the
+    // little bars of a sticker need those extra pixels to be read.
     function startZxingScan() {
         if (!window.ZXing || !window.ZXing.BrowserMultiFormatReader) {
             setCameraStatus("The camera scanner could not be loaded. Refresh the page and try again.", "error");
@@ -1005,25 +1013,103 @@
 
         cameraReader = new window.ZXing.BrowserMultiFormatReader(hints, 120);
 
-        // The library attaches the stream to the video and starts it. It must
-        // not be started beforehand, or the library waits for a "canplay" that
-        // has already passed and its reading loop never begins.
-        var started = cameraReader.decodeFromStream(cameraStream, cameraVideo, function (result) {
-            if (!result) {
+        // The picture the frames are drawn on.
+        var frameCanvas = document.createElement("canvas");
+        var frameCtx = null;
+        try {
+            frameCtx = frameCanvas.getContext("2d");
+        } catch (e) {
+            frameCtx = null;
+        }
+
+        // The video is attached and started here, because the library no
+        // longer does it for us.
+        if (cameraVideo) {
+            try {
+                cameraVideo.srcObject = cameraStream;
+                var starting = cameraVideo.play();
+                if (starting && starting.catch) {
+                    starting.catch(function () {
+                        setCameraStatus("The camera could not be started. Allow camera access and try again.", "error");
+                        playBeep("error");
+                    });
+                }
+            } catch (e) {
+                setCameraStatus("The camera could not be started. Allow camera access and try again.", "error");
+                playBeep("error");
+                return;
+            }
+        }
+
+        // Reads the picture on the canvas and gives back the text of the
+        // code, or an empty string when there is none in it.
+        function readCanvas() {
+            if (!frameCtx || !window.ZXing.HTMLCanvasElementLuminanceSource) return "";
+            try {
+                var source = new window.ZXing.HTMLCanvasElementLuminanceSource(frameCanvas);
+                var bitmap = new window.ZXing.BinaryBitmap(new window.ZXing.HybridBinarizer(source));
+                var result = cameraReader.decodeBitmap(bitmap);
+                if (result && result.getText) return result.getText();
+                return "";
+            } catch (e) {
+                return "";
+            }
+        }
+
+        // One look at the camera. The middle of the picture comes first,
+        // made twice as big, because that is where the sticker is and because
+        // the bars of a small sticker need the extra pixels. The whole
+        // picture is looked at afterwards, in case the code is not in the
+        // middle.
+        function readFrame() {
+            if (!cameraReader || !cameraVideo) return;
+            var width = cameraVideo.videoWidth ? cameraVideo.videoWidth : 0;
+            var height = cameraVideo.videoHeight ? cameraVideo.videoHeight : 0;
+            if (!width || !height || !frameCtx) {
                 noteFrameWithoutCode();
                 return;
             }
-            onCameraCode(result.getText ? result.getText() : "");
-        });
 
-        if (started && started.then) {
-            started.then(function (controls) {
-                cameraControls = controls;
-            }).catch(function () {
-                setCameraStatus("The camera could not be started. Allow camera access and try again.", "error");
-                playBeep("error");
-            });
+            var text = "";
+
+            try {
+                var cutWidth = Math.round(width * 0.6);
+                var cutHeight = Math.round(height * 0.6);
+                frameCanvas.width = cutWidth * 2;
+                frameCanvas.height = cutHeight * 2;
+                frameCtx.drawImage(cameraVideo,
+                    Math.round((width - cutWidth) / 2), Math.round((height - cutHeight) / 2), cutWidth, cutHeight,
+                    0, 0, cutWidth * 2, cutHeight * 2);
+                text = readCanvas();
+            } catch (e) {
+                text = "";
+            }
+
+            if (!text) {
+                try {
+                    frameCanvas.width = width;
+                    frameCanvas.height = height;
+                    frameCtx.drawImage(cameraVideo, 0, 0, width, height);
+                    text = readCanvas();
+                } catch (e) {
+                    text = "";
+                }
+            }
+
+            if (text) {
+                onCameraCode(text);
+            } else {
+                noteFrameWithoutCode();
+                // Nothing found for a while: the sticker is probably too far
+                // away, and that is said once, in plain words.
+                if (!lastCameraCode && !cameraHintShown && cameraOpenedAt && Date.now() - cameraOpenedAt > 6000) {
+                    cameraHintShown = true;
+                    setCameraStatus("No code found yet. Move a little closer, so the barcode fills the frame.", "");
+                }
+            }
         }
+
+        cameraScanTimer = setInterval(readFrame, 120);
     }
 
     async function startCameraScan() {
@@ -1037,6 +1123,7 @@
         }
 
         cameraOverlay.hidden = false;
+        cameraOpenedAt = Date.now();
         setCameraStatus("Hold the barcode about 15 cm from the camera, inside the frame.", "");
 
         // Ask for a sharp picture. The camera normally hands over 640x480,
@@ -1071,8 +1158,8 @@
 
         // The browser's own scanner is used when it has one. It reads the
         // video by itself, so the video is attached here. Otherwise the
-        // reading library attaches it, which is why this happens before the
-        // video is started.
+        // reading library does the work, and it attaches the video and
+        // starts it.
         var native = await canUseNativeScanner();
         if (native) {
             if (cameraVideo) {
