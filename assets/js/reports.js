@@ -80,6 +80,77 @@
             "Gross sales, discounts and net sales for " + RANGE_TEXT[currentRange].toLowerCase() + ".";
     }
 
+    // --- Compared with the window before this one ---
+    // More money is good, so it shows green going up. More discount is not
+    // good, so that card turns the other way round.
+    function renderChange(id, current, previous, options) {
+        var el = document.getElementById(id);
+        if (!el) return;
+        var opts = options || {};
+
+        if (!previous) {
+            el.textContent = "";
+            el.className = "stat-change";
+            return;
+        }
+
+        var cur = Number(current) || 0;
+        var prev = Number(previous) || 0;
+
+        if (prev === 0) {
+            if (cur === 0) {
+                el.textContent = "same as before";
+                el.className = "stat-change flat";
+            } else {
+                el.textContent = "▲ new";
+                el.className = "stat-change up";
+            }
+            return;
+        }
+
+        var pct = ((cur - prev) / Math.abs(prev)) * 100;
+        var arrow = pct > 0.05 ? "▲" : pct < -0.05 ? "▼" : "—";
+        el.textContent = arrow + " " + Math.abs(pct).toFixed(1) + "% vs previous";
+
+        var cls = "stat-change";
+        if (opts.neutral) {
+            cls += " flat";
+        } else if (opts.reverse) {
+            cls += pct > 0.05 ? " down" : pct < -0.05 ? " up" : " flat";
+        } else {
+            cls += pct > 0.05 ? " up" : pct < -0.05 ? " down" : " flat";
+        }
+        el.className = cls;
+    }
+
+    function renderComparisons(stats) {
+        var previous = stats.previous || null;
+        renderChange("rep-gross-change", stats.gross, previous ? previous.gross : null);
+        renderChange("rep-net-change", stats.net, previous ? previous.net : null);
+        renderChange("rep-discount-change", stats.discount, previous ? previous.discount : null, { reverse: true });
+        renderChange("rep-tx-change", stats.transactions, previous ? previous.transactions : null);
+        renderChange("rep-units-change", stats.units, previous ? previous.units : null);
+        renderChange("rep-avg-change", stats.average, previous ? previous.average : null, { neutral: true });
+    }
+
+    // --- How much went out in discounts, and on how many receipts ---
+    function renderDiscountNote(stats) {
+        var note = document.getElementById("rep-discount-note");
+        if (!note) return;
+
+        var gross = Number(stats.gross) || 0;
+        var discount = Number(stats.discount) || 0;
+        var receipts = Number(stats.discounted) || 0;
+
+        if (!discount && !receipts) {
+            note.textContent = "No discounts given";
+            return;
+        }
+
+        var share = gross > 0 ? (discount / gross) * 100 : 0;
+        note.textContent = share.toFixed(1) + "% of gross · " + receipts + " receipt" + (receipts === 1 ? "" : "s");
+    }
+
     function renderTop(stats) {
         var tbody = document.querySelector("#rep-top-table tbody");
 
@@ -383,6 +454,181 @@
         }
     }
 
+    // A small bar chart: many bars, little space, just enough to see the shape.
+    function renderMiniBars(el, buckets, options) {
+        if (!el) return;
+        var opts = options || {};
+        var W = 320, H = 116, padT = 8, padB = 20;
+        var innerH = H - padT - padB;
+
+        var max = 0;
+        var best = 0;
+        buckets.forEach(function (b, i) {
+            var net = Number(b.net) || 0;
+            if (net > max) { max = net; best = i; }
+        });
+        var top = niceMax(max);
+
+        var slot = W / buckets.length;
+        var barW = Math.max(3, Math.min(30, slot * 0.62));
+        var labelEvery = opts.labelEvery || 1;
+
+        var parts = [];
+        buckets.forEach(function (b, i) {
+            var net = Number(b.net) || 0;
+            var h = max > 0 ? (net / top) * innerH : 0;
+            var x = slot * i + (slot - barW) / 2;
+            var y = padT + innerH - h;
+            var cls = i === best ? "mini-bar best" : net > 0 ? "mini-bar" : "mini-bar zero";
+            var tip = b.label + " · " + currency(net) + " · " + b.transactions + " transaction(s)";
+            parts.push('<rect class="' + cls + '" x="' + x.toFixed(1) + '" y="' +
+                (net > 0 ? y.toFixed(1) : (padT + innerH - 2).toFixed(1)) + '" width="' + barW.toFixed(1) +
+                '" height="' + (net > 0 ? h.toFixed(1) : 2) + '" rx="2"><title>' + esc(tip) + "</title></rect>");
+            if (i % labelEvery === 0) {
+                parts.push('<text class="axis-label" x="' + (x + barW / 2).toFixed(1) + '" y="' + (H - 6) +
+                    '" text-anchor="middle">' + esc(b.label) + "</text>");
+            }
+        });
+
+        el.innerHTML = '<svg viewBox="0 0 ' + W + " " + H + '" role="img" aria-label="' + esc(opts.aria || "Sales") + '">' +
+            parts.join("") + "</svg>";
+    }
+
+    // --- When the shop is busy: all time, the pattern of the business ---
+    var WEEKDAY_NAMES = {
+        "1": "Sunday", "2": "Monday", "3": "Tuesday", "4": "Wednesday",
+        "5": "Thursday", "6": "Friday", "7": "Saturday"
+    };
+
+    function renderBusy(stats) {
+        var hoursEl = document.getElementById("rep-hours");
+        var daysEl = document.getElementById("rep-weekdays");
+        var insight = document.getElementById("rep-busy-insight");
+        var empty = document.getElementById("rep-busy-empty");
+        if (!hoursEl) return;
+
+        var busy = stats.busy || {};
+        var byHour = Array.isArray(busy.byHour) ? busy.byHour : [];
+        var byWeekday = Array.isArray(busy.byWeekday) ? busy.byWeekday : [];
+
+        if (!byHour.length && !byWeekday.length) {
+            hoursEl.innerHTML = "";
+            daysEl.innerHTML = "";
+            if (empty) empty.style.display = "block";
+            if (insight) insight.textContent = "";
+            return;
+        }
+        if (empty) empty.style.display = "none";
+
+        // Every hour of the day, even the quiet ones.
+        var hourLookup = {};
+        byHour.forEach(function (b) { hourLookup[String(b.bucket)] = b; });
+        var hours = [];
+        for (var h = 0; h < 24; h++) {
+            var key = String(h);
+            var found = hourLookup[key] || { bucket: key, net: 0, transactions: 0 };
+            hours.push({
+                label: (h < 10 ? "0" : "") + h,
+                net: Number(found.net) || 0,
+                transactions: Number(found.transactions) || 0
+            });
+        }
+
+        // Monday first, the way a week is read.
+        var dayLookup = {};
+        byWeekday.forEach(function (b) { dayLookup[String(b.bucket)] = b; });
+        var days = [];
+        ["2", "3", "4", "5", "6", "7", "1"].forEach(function (key) {
+            var found = dayLookup[key] || { bucket: key, net: 0, transactions: 0 };
+            days.push({
+                label: WEEKDAY_NAMES[key].slice(0, 3),
+                full: WEEKDAY_NAMES[key],
+                net: Number(found.net) || 0,
+                transactions: Number(found.transactions) || 0
+            });
+        });
+
+        renderMiniBars(hoursEl, hours, { labelEvery: 3, aria: "Net sales by hour of the day" });
+        renderMiniBars(daysEl, days, { labelEvery: 1, aria: "Net sales by day of the week" });
+
+        var bestHour = hours.reduce(function (a, b) { return Number(b.net) > Number(a.net) ? b : a; }, hours[0]);
+        var bestDay = days.reduce(function (a, b) { return Number(b.net) > Number(a.net) ? b : a; }, days[0]);
+        if (insight) {
+            insight.textContent = "Rush hour: " + bestHour.label + ":00 · Biggest day: " + bestDay.full;
+        }
+    }
+
+    // --- The items that did not move ---
+    function renderDeadStock(stats) {
+        var tbody = document.querySelector("#rep-dead-table tbody");
+        var empty = document.getElementById("rep-dead-empty");
+        var note = document.getElementById("rep-dead-note");
+        if (!tbody) return;
+
+        var dead = stats.dead && Array.isArray(stats.dead.items) ? stats.dead.items : [];
+        var total = stats.dead && Number(stats.dead.total) || dead.length;
+
+        tbody.innerHTML = dead.map(function (d) {
+            return "<tr>" +
+                "<td>" + esc(d.name) + "</td>" +
+                "<td>" + esc(d.category) + "</td>" +
+                "<td>" + d.stock + "</td>" +
+                "</tr>";
+        }).join("");
+
+        if (empty) empty.style.display = dead.length ? "none" : "block";
+        if (note) {
+            note.textContent = total
+                ? total + " item" + (total === 1 ? "" : "s") + " did not sell in this period" +
+                  (total > dead.length ? " (showing " + dead.length + ")" : "")
+                : "Everything sold in this period.";
+        }
+    }
+
+    // --- What will run out, and when ---
+    function renderRunningOut(stats) {
+        var tbody = document.querySelector("#rep-cover-table tbody");
+        var empty = document.getElementById("rep-cover-empty");
+        var note = document.getElementById("rep-cover-note");
+        if (!tbody) return;
+
+        var velocity = Array.isArray(stats.velocity) ? stats.velocity : [];
+
+        var rows = velocity.filter(function (v) {
+            return Number(v.sold30) > 0;
+        }).map(function (v) {
+            return {
+                name: v.name,
+                stock: Number(v.stock) || 0,
+                sold30: Number(v.sold30) || 0,
+                days: (Number(v.stock) || 0) * 30 / Number(v.sold30)
+            };
+        }).filter(function (v) {
+            return v.days < 31;
+        }).sort(function (a, b) {
+            return a.days - b.days;
+        });
+
+        tbody.innerHTML = rows.slice(0, 20).map(function (v) {
+            var cls = v.days < 7 ? "badge badge-out" : "badge badge-low";
+            var label = v.days < 1 ? "gone" : Math.round(v.days) + " days";
+            return "<tr>" +
+                "<td>" + esc(v.name) + "</td>" +
+                "<td>" + v.stock + "</td>" +
+                "<td>" + v.sold30 + "</td>" +
+                '<td><span class="' + cls + '">' + label + "</span></td>" +
+                "</tr>";
+        }).join("");
+
+        if (empty) empty.style.display = rows.length ? "none" : "block";
+        if (note) {
+            note.textContent = rows.length
+                ? "Days of stock left, based on the last 30 days" +
+                  (rows.length > 20 ? " (showing the 20 soonest of " + rows.length + ")" : "")
+                : "Nothing is running out, based on the last 30 days.";
+        }
+    }
+
     async function render() {
         var stats;
         try {
@@ -397,10 +643,15 @@
 
         lastStats = stats;
         renderTotals(stats);
+        renderComparisons(stats);
+        renderDiscountNote(stats);
         renderTop(stats);
         renderTransactions(stats);
         renderSeriesChart(stats);
         renderCategoryPie(stats);
+        renderBusy(stats);
+        renderDeadStock(stats);
+        renderRunningOut(stats);
     }
 
     document.getElementById("rep-ranges").querySelectorAll(".chip").forEach(function (btn) {
@@ -442,7 +693,94 @@
             lines.push([money(stats.gross), money(stats.discount), money(stats.net), stats.transactions, stats.units, money(stats.average)].map(csvCell).join(","));
             lines.push("");
 
-            // --- Section 2: sales over time ---
+            // --- Section 2: compared with the window before ---
+            lines.push(["Compared With Previous Period"].map(csvCell).join(","));
+            lines.push(["Gross Sales", "Discounts", "Net Sales", "Transactions", "Items Sold"].map(csvCell).join(","));
+            if (stats.previous) {
+                lines.push([
+                    money(stats.previous.gross),
+                    money(stats.previous.discount),
+                    money(stats.previous.net),
+                    stats.previous.transactions,
+                    stats.previous.units
+                ].join(","));
+            } else {
+                lines.push(["-", "No earlier period to compare with.", "", "", ""].join(","));
+            }
+            lines.push("");
+
+            // --- Section 3: the discounts ---
+            lines.push(["Discounts"].map(csvCell).join(","));
+            lines.push(["Discounted Amount", "% of Gross", "Discounted Receipts"].map(csvCell).join(","));
+            lines.push([
+                money(stats.discount),
+                (Number(stats.gross) > 0 ? ((Number(stats.discount) / Number(stats.gross)) * 100).toFixed(2) : "0.00"),
+                stats.discounted || 0
+            ].join(","));
+            lines.push("");
+
+            // --- Section 4: when the shop is busy ---
+            lines.push(["When We're Busy (All Time)"].map(csvCell).join(","));
+            lines.push(["Hour", "Net Sales", "Transactions"].map(csvCell).join(","));
+            var busy = stats.busy || {};
+            var hourRows = Array.isArray(busy.byHour) ? busy.byHour : [];
+            if (hourRows.length) {
+                hourRows.forEach(function (b) {
+                    lines.push([(String(b.bucket).length < 2 ? "0" : "") + b.bucket + ":00", money(b.net), b.transactions].join(","));
+                });
+            } else {
+                lines.push(["-", "No sales recorded yet.", ""].join(","));
+            }
+            lines.push("");
+            lines.push(["Day", "Net Sales", "Transactions"].map(csvCell).join(","));
+            var dayRows = Array.isArray(busy.byWeekday) ? busy.byWeekday : [];
+            if (dayRows.length) {
+                dayRows.forEach(function (b) {
+                    lines.push([WEEKDAY_NAMES[String(b.bucket)] || b.bucket, money(b.net), b.transactions].join(","));
+                });
+            } else {
+                lines.push(["-", "No sales recorded yet.", ""].join(","));
+            }
+            lines.push("");
+
+            // --- Section 5: the dead stock ---
+            lines.push(["Dead Stock"].map(csvCell).join(","));
+            lines.push(["Item", "Category", "Stock"].map(csvCell).join(","));
+            var deadItems = stats.dead && Array.isArray(stats.dead.items) ? stats.dead.items : [];
+            if (deadItems.length) {
+                deadItems.forEach(function (d) {
+                    lines.push([csvCell(d.name), csvCell(d.category), d.stock].join(","));
+                });
+            } else {
+                lines.push(["-", "Everything sold in this period.", ""].join(","));
+            }
+            lines.push("");
+
+            // --- Section 6: what is running out ---
+            lines.push(["Running Out Soon"].map(csvCell).join(","));
+            lines.push(["Item", "Stock", "Sold (30 days)", "Days of Cover"].map(csvCell).join(","));
+            var cover = (Array.isArray(stats.velocity) ? stats.velocity : [])
+                .filter(function (v) { return Number(v.sold30) > 0; })
+                .map(function (v) {
+                    return {
+                        name: v.name,
+                        stock: Number(v.stock) || 0,
+                        sold30: Number(v.sold30) || 0,
+                        days: (Number(v.stock) || 0) * 30 / Number(v.sold30)
+                    };
+                })
+                .filter(function (v) { return v.days < 31; })
+                .sort(function (a, b) { return a.days - b.days; });
+            if (cover.length) {
+                cover.forEach(function (v) {
+                    lines.push([csvCell(v.name), v.stock, v.sold30, v.days.toFixed(1)].join(","));
+                });
+            } else {
+                lines.push(["-", "Nothing is running out.", "", ""].join(","));
+            }
+            lines.push("");
+
+            // --- Section 7: sales over time ---
             lines.push(["Sales Over Time"].map(csvCell).join(","));
             lines.push(["Bucket", "Gross", "Discount", "Net", "Transactions"].map(csvCell).join(","));
             var buckets = seriesBuckets(stats);
@@ -461,7 +799,7 @@
             }
             lines.push("");
 
-            // --- Section 3: sales by category ---
+            // --- Section 8: sales by category ---
             lines.push(["Sales by Category"].map(csvCell).join(","));
             lines.push(["Category", "Qty Sold", "Revenue"].map(csvCell).join(","));
             var categories = Array.isArray(stats.categories) ? stats.categories : [];
@@ -474,7 +812,7 @@
             }
             lines.push("");
 
-            // --- Section 4: most sold items ---
+            // --- Section 9: most sold items ---
             lines.push(["Most Sold Items"].map(csvCell).join(","));
             lines.push(["Rank", "Item", "Qty Sold", "Revenue"].map(csvCell).join(","));
             if (stats.top.length) {
@@ -486,7 +824,7 @@
             }
             lines.push("");
 
-            // --- Section 5: the transactions ---
+            // --- Section 10: the transactions ---
             lines.push(["Transactions"].map(csvCell).join(","));
             lines.push(["Sale No.", "Date", "Cashier", "Items", "Gross", "Discount %", "Discount", "Net"].map(csvCell).join(","));
             if (stats.sales.length) {

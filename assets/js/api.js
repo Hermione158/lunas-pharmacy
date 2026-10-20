@@ -29,6 +29,30 @@
         return d.toISOString();
     }
 
+    // The window just before the selected one, so the report can say whether
+    // the shop is up or down. It covers the same amount of time as the
+    // current window, so a part-finished week is compared with a part-
+    // finished week and not with a whole one.
+    function rangePrevious(range) {
+        if (range === "all") return null;
+
+        var now = new Date();
+        var start = new Date(now);
+        if (range === "week") start.setDate(start.getDate() - start.getDay());
+        else if (range === "month") start.setDate(1);
+        start.setHours(0, 0, 0, 0);
+
+        var prev = new Date(start);
+        if (range === "week") prev.setDate(prev.getDate() - 7);
+        else if (range === "month") prev.setMonth(prev.getMonth() - 1);
+        else prev.setDate(prev.getDate() - 1);
+
+        var elapsed = now.getTime() - start.getTime();
+        var prevTo = new Date(prev.getTime() + elapsed);
+
+        return { from: prev.toISOString(), to: prevTo.toISOString() };
+    }
+
     async function request(path, options) {
         var opts = options || {};
         var init = { method: opts.method || "GET", credentials: "same-origin", headers: {} };
@@ -59,6 +83,7 @@
         currency: currency,
         statusFor: statusFor,
         rangeFrom: rangeFrom,
+        rangePrevious: rangePrevious,
 
         login: function (username, password) {
             return request("/api/login", { method: "POST", body: { username: username, password: password } });
@@ -96,9 +121,14 @@
             var from = rangeFrom(range);
             // Minutes ahead of UTC, so the report's buckets follow the shop's clock.
             var tz = -new Date().getTimezoneOffset();
+            var previous = rangePrevious(range);
             var query = "?range=" + encodeURIComponent(range || "today") +
                 (from ? "&from=" + encodeURIComponent(from) : "") +
                 "&tz=" + encodeURIComponent(String(tz));
+            if (previous) {
+                query += "&prevFrom=" + encodeURIComponent(previous.from) +
+                    "&prevTo=" + encodeURIComponent(previous.to);
+            }
             return request("/api/sales" + query);
         },
 

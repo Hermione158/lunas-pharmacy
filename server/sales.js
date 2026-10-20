@@ -93,6 +93,122 @@ async function salesByCategory(pool, where, params) {
     });
 }
 
+// The same numbers for the window before this one, so the page can say
+// whether the shop is up or down.
+async function previousPeriod(pool, from, to) {
+    if (!from || !to) return null;
+
+    const where = "WHERE s.created_at >= ? AND s.created_at < ?";
+    const params = [from, to];
+
+    const [[totals]] = await pool.query(
+        "SELECT COALESCE(SUM(s.gross), 0) AS gross, COALESCE(SUM(s.discount), 0) AS discount, " +
+        "COALESCE(SUM(s.net), 0) AS net, COUNT(*) AS transactions FROM sales s " + where,
+        params
+    );
+
+    const [[units]] = await pool.query(
+        "SELECT COALESCE(SUM(si.qty), 0) AS units FROM sale_items si " +
+        "JOIN sales s ON s.id = si.sale_id " + where,
+        params
+    );
+
+    return {
+        gross: round2(Number(totals.gross)),
+        discount: round2(Number(totals.discount)),
+        net: round2(Number(totals.net)),
+        transactions: Number(totals.transactions),
+        units: Number(units.units)
+    };
+}
+
+// The shop's rhythm: the hours and the days that people actually shop.
+// This one always looks at the whole history, because that is the pattern
+// the business runs on.
+async function busyPeriods(pool, tz) {
+    const shifted = "CONVERT_TZ(s.created_at, '+00:00', '" + tz + "')";
+
+    const [hours] = await pool.query(
+        "SELECT HOUR(" + shifted + ") AS bucket, COALESCE(SUM(s.net), 0) AS net, " +
+        "COUNT(*) AS transactions FROM sales s GROUP BY bucket ORDER BY bucket",
+        []
+    );
+
+    const [weekdays] = await pool.query(
+        "SELECT DAYOFWEEK(" + shifted + ") AS bucket, COALESCE(SUM(s.net), 0) AS net, " +
+        "COUNT(*) AS transactions FROM sales s GROUP BY bucket ORDER BY bucket",
+        []
+    );
+
+    function clean(rows) {
+        return rows.map(function (r) {
+            return {
+                bucket: String(r.bucket),
+                net: round2(Number(r.net)),
+                transactions: Number(r.transactions)
+            };
+        });
+    }
+
+    return { byHour: clean(hours), byWeekday: clean(weekdays) };
+}
+
+// The items that did not move at all in this period.
+async function deadStock(pool, where, params) {
+    const inner = where ? where.replace("WHERE s.created_at", "AND s.created_at") : "";
+
+    const [rows] = await pool.query(
+        "SELECT p.id, p.name, p.category, p.stock FROM products p " +
+        "WHERE NOT EXISTS (SELECT 1 FROM sale_items si JOIN sales s ON s.id = si.sale_id " +
+        "WHERE si.product_id = p.id " + inner + ") ORDER BY p.name LIMIT 100",
+        params
+    );
+
+    const [[count]] = await pool.query(
+        "SELECT COUNT(*) AS total FROM products p " +
+        "WHERE NOT EXISTS (SELECT 1 FROM sale_items si JOIN sales s ON s.id = si.sale_id " +
+        "WHERE si.product_id = p.id " + inner + ")",
+        params
+    );
+
+    return {
+        total: Number(count.total),
+        items: rows.map(function (r) {
+            return {
+                id: r.id,
+                name: String(r.name),
+                category: String(r.category || "Uncategorized"),
+                stock: Number(r.stock)
+            };
+        })
+    };
+}
+
+// How fast each item is selling over the last 30 days, next to the stock
+// that is left. The days of cover are worked out on the page.
+async function salesVelocity(pool) {
+    const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+
+    const [rows] = await pool.query(
+        "SELECT p.id, p.name, p.category, p.stock, " +
+        "COALESCE(SUM(CASE WHEN s.id IS NOT NULL THEN si.qty ELSE 0 END), 0) AS sold30 " +
+        "FROM products p LEFT JOIN sale_items si ON si.product_id = p.id " +
+        "LEFT JOIN sales s ON s.id = si.sale_id AND s.created_at >= ? " +
+        "GROUP BY p.id, p.name, p.category, p.stock ORDER BY sold30 DESC LIMIT 200",
+        [since]
+    );
+
+    return rows.map(function (r) {
+        return {
+            id: r.id,
+            name: String(r.name),
+            category: String(r.category || "Uncategorized"),
+            stock: Number(r.stock),
+            sold30: Number(r.sold30)
+        };
+    });
+}
+
 async function listSales(req, res) {
     const { range, from } = parseRange(req);
     const tz = parseTz(req);
@@ -103,7 +219,9 @@ async function listSales(req, res) {
 
     const [[totals]] = await pool.query(
         "SELECT COALESCE(SUM(s.gross), 0) AS gross, COALESCE(SUM(s.discount), 0) AS discount, " +
-        "COALESCE(SUM(s.net), 0) AS net, COUNT(*) AS transactions FROM sales s " + where,
+        "COALESCE(SUM(s.net), 0) AS net, COUNT(*) AS transactions, " +
+        "COALESCE(SUM(CASE WHEN s.discount > 0 THEN 1 ELSE 0 END), 0) AS discounted " +
+        "FROM sales s " + where,
         params
     );
 
@@ -127,17 +245,30 @@ async function listSales(req, res) {
         params
     );
 
-    // The graphs. They are extra, so a failure here must not take the whole
-    // report down with it.
+    // The extra analysis. Each one is on its own, so a failure in one of
+    // them never takes the whole report down with it.
     let series = [];
     let categories = [];
+    let previous = null;
+    let discounted = Number(totals.discounted) || 0;
+    let busy = { byHour: [], byWeekday: [] };
+    let dead = { total: 0, items: [] };
+    let velocity = [];
+
+    try { series = await salesSeries(pool, grain, tz, where, params); } catch (err) { series = []; }
+    try { categories = await salesByCategory(pool, where, params); } catch (err) { categories = []; }
+
     try {
-        series = await salesSeries(pool, grain, tz, where, params);
-        categories = await salesByCategory(pool, where, params);
-    } catch (err) {
-        series = [];
-        categories = [];
-    }
+        const prevFrom = req.query.prevFrom ? new Date(String(req.query.prevFrom)) : null;
+        const prevTo = req.query.prevTo ? new Date(String(req.query.prevTo)) : null;
+        if (prevFrom && prevTo && !isNaN(prevFrom.getTime()) && !isNaN(prevTo.getTime())) {
+            previous = await previousPeriod(pool, prevFrom, prevTo);
+        }
+    } catch (err) { previous = null; }
+
+    try { busy = await busyPeriods(pool, tz); } catch (err) { busy = { byHour: [], byWeekday: [] }; }
+    try { dead = await deadStock(pool, where, params); } catch (err) { dead = { total: 0, items: [] }; }
+    try { velocity = await salesVelocity(pool); } catch (err) { velocity = []; }
 
     const net = round2(Number(totals.net));
     const transactions = Number(totals.transactions);
@@ -151,6 +282,11 @@ async function listSales(req, res) {
         transactions: transactions,
         units: Number(units.units),
         average: transactions ? round2(net / transactions) : 0,
+        discounted: discounted,
+        previous: previous,
+        busy: busy,
+        dead: dead,
+        velocity: velocity,
         series: series,
         categories: categories,
         top: top.map(function (r) {
