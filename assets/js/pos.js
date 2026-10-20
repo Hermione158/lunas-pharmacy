@@ -930,13 +930,24 @@
         var now = Date.now();
         if (text === lastCameraCode) {
             // The same sticker is read many times a second. A good code is
-            // taken once, until the item leaves the frame for a second and a
-            // half; a wrong code is only complained about once in a while.
+            // taken once, until the item leaves the frame for a second and
+            // a half; a wrong code is only complained about once in a while.
             if (lastCameraResult === "bad") {
-                if (now - lastCameraTime < 4000) return;
+                if (now - lastCameraTime < 4000) {
+                    // It is in front of the camera again, so the time it is
+                    // away starts again.
+                    cameraGoneSince = 0;
+                    return;
+                }
             } else {
                 var wasAway = cameraGoneSince && now - cameraGoneSince >= 1500;
-                if (!wasAway) return;
+                if (!wasAway) {
+                    // It is in front of the camera again, so the time it is
+                    // away starts again. A moment where nothing could be
+                    // read is not the same as the sticker being taken away.
+                    cameraGoneSince = 0;
+                    return;
+                }
             }
         }
         cameraGoneSince = 0;
