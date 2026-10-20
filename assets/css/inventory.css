@@ -644,6 +644,11 @@ body {
     color: #b3384a;
 }
 
+.badge-flat {
+    background: #eceff3;
+    color: #5a6672;
+}
+
 /* Editable inputs inside the edit table */
 .inv-input {
     width: 100%;

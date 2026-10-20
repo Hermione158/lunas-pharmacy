@@ -184,18 +184,28 @@ async function deadStock(pool, where, params) {
     };
 }
 
+// A shelf with this many on it (or fewer) is worth restocking even when the
+// item sells slowly.
+const LOW_STOCK = 10;
+
 // How fast each item is selling over the last 30 days, next to the stock
-// that is left. The days of cover are worked out on the page.
+// that is left. The days of cover are worked out on the page. Only the
+// shelves that need attention come back: the ones that will empty within a
+// month, and the ones with little stock left whatever their speed.
 async function salesVelocity(pool) {
-    const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const since = new Date(Date.now() - 30 * 24 * 60 * 1000);
 
     const [rows] = await pool.query(
+        "SELECT * FROM (" +
         "SELECT p.id, p.name, p.category, p.stock, " +
         "COALESCE(SUM(CASE WHEN s.id IS NOT NULL THEN si.qty ELSE 0 END), 0) AS sold30 " +
         "FROM products p LEFT JOIN sale_items si ON si.product_id = p.id " +
         "LEFT JOIN sales s ON s.id = si.sale_id AND s.created_at >= ? " +
-        "GROUP BY p.id, p.name, p.category, p.stock ORDER BY sold30 DESC LIMIT 200",
-        [since]
+        "GROUP BY p.id, p.name, p.category, p.stock" +
+        ") t WHERE t.stock <= ? OR (t.sold30 > 0 AND (t.stock * 30.0) / t.sold30 < 31) " +
+        "ORDER BY CASE WHEN t.sold30 > 0 THEN (t.stock * 30.0) / t.sold30 ELSE 999999 END, t.stock ASC " +
+        "LIMIT 200",
+        [since, LOW_STOCK]
     );
 
     return rows.map(function (r) {

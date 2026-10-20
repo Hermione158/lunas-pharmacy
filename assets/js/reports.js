@@ -586,46 +586,66 @@
     }
 
     // --- What will run out, and when ---
+    // A shelf is worth watching when it holds very little, or when it will
+    // empty within a month at the speed it is selling right now.
+    var LOW_STOCK = 10;
+
+    function runningOutRows(stats) {
+        var velocity = Array.isArray(stats.velocity) ? stats.velocity : [];
+
+        return velocity.map(function (v) {
+            var stock = Number(v.stock) || 0;
+            var sold30 = Number(v.sold30) || 0;
+            return {
+                name: v.name,
+                stock: stock,
+                sold30: sold30,
+                days: sold30 > 0 ? stock * 30 / sold30 : Infinity
+            };
+        }).filter(function (v) {
+            return v.stock <= LOW_STOCK || (v.sold30 > 0 && v.days < 31);
+        }).sort(function (a, b) {
+            // Soonest to empty first. The ones that never sell come last.
+            var ka = a.sold30 > 0 ? Math.min(a.days, 100000) : 100000;
+            var kb = b.sold30 > 0 ? Math.min(b.days, 100000) : 100000;
+            if (ka !== kb) return ka - kb;
+            if (a.stock !== b.stock) return a.stock - b.stock;
+            return String(a.name).localeCompare(String(b.name));
+        });
+    }
+
+    function runningOutStatus(v) {
+        if (v.sold30 <= 0) return { cls: "badge badge-flat", label: "not selling", days: "" };
+        if (v.days < 1) return { cls: "badge badge-out", label: "gone", days: "0.0" };
+        if (v.days < 7) return { cls: "badge badge-out", label: "~" + Math.round(v.days) + " days", days: v.days.toFixed(1) };
+        if (v.days < 31) return { cls: "badge badge-low", label: "~" + Math.round(v.days) + " days", days: v.days.toFixed(1) };
+        return { cls: "badge badge-low", label: "low stock", days: v.days.toFixed(1) };
+    }
+
     function renderRunningOut(stats) {
         var tbody = document.querySelector("#rep-cover-table tbody");
         var empty = document.getElementById("rep-cover-empty");
         var note = document.getElementById("rep-cover-note");
         if (!tbody) return;
 
-        var velocity = Array.isArray(stats.velocity) ? stats.velocity : [];
-
-        var rows = velocity.filter(function (v) {
-            return Number(v.sold30) > 0;
-        }).map(function (v) {
-            return {
-                name: v.name,
-                stock: Number(v.stock) || 0,
-                sold30: Number(v.sold30) || 0,
-                days: (Number(v.stock) || 0) * 30 / Number(v.sold30)
-            };
-        }).filter(function (v) {
-            return v.days < 31;
-        }).sort(function (a, b) {
-            return a.days - b.days;
-        });
+        var rows = runningOutRows(stats);
 
         tbody.innerHTML = rows.slice(0, 20).map(function (v) {
-            var cls = v.days < 7 ? "badge badge-out" : "badge badge-low";
-            var label = v.days < 1 ? "gone" : Math.round(v.days) + " days";
+            var st = runningOutStatus(v);
             return "<tr>" +
                 "<td>" + esc(v.name) + "</td>" +
                 "<td>" + v.stock + "</td>" +
                 "<td>" + v.sold30 + "</td>" +
-                '<td><span class="' + cls + '">' + label + "</span></td>" +
+                '<td><span class="' + st.cls + '">' + st.label + "</span></td>" +
                 "</tr>";
         }).join("");
 
         if (empty) empty.style.display = rows.length ? "none" : "block";
         if (note) {
             note.textContent = rows.length
-                ? "Days of stock left, based on the last 30 days" +
+                ? "Shelves with " + LOW_STOCK + " or fewer, or that empty within a month at the last 30 days' pace" +
                   (rows.length > 20 ? " (showing the 20 soonest of " + rows.length + ")" : "")
-                : "Nothing is running out, based on the last 30 days.";
+                : "No shelf is running low, based on the last 30 days.";
         }
     }
 
@@ -758,25 +778,15 @@
 
             // --- Section 6: what is running out ---
             lines.push(["Running Out Soon"].map(csvCell).join(","));
-            lines.push(["Item", "Stock", "Sold (30 days)", "Days of Cover"].map(csvCell).join(","));
-            var cover = (Array.isArray(stats.velocity) ? stats.velocity : [])
-                .filter(function (v) { return Number(v.sold30) > 0; })
-                .map(function (v) {
-                    return {
-                        name: v.name,
-                        stock: Number(v.stock) || 0,
-                        sold30: Number(v.sold30) || 0,
-                        days: (Number(v.stock) || 0) * 30 / Number(v.sold30)
-                    };
-                })
-                .filter(function (v) { return v.days < 31; })
-                .sort(function (a, b) { return a.days - b.days; });
+            lines.push(["Item", "Stock", "Sold (30 days)", "Days of Cover", "Status"].map(csvCell).join(","));
+            var cover = runningOutRows(stats);
             if (cover.length) {
                 cover.forEach(function (v) {
-                    lines.push([csvCell(v.name), v.stock, v.sold30, v.days.toFixed(1)].join(","));
+                    var st = runningOutStatus(v);
+                    lines.push([csvCell(v.name), v.stock, v.sold30, st.days, st.label].join(","));
                 });
             } else {
-                lines.push(["-", "Nothing is running out.", "", ""].join(","));
+                lines.push(["-", "Nothing is running out.", "", "", ""].join(","));
             }
             lines.push("");
 
