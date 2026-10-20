@@ -1176,7 +1176,7 @@ body {
 
 @media print {
     @page {
-        margin: 6mm;
+        margin: 4mm;
     }
 
     body {
@@ -1194,36 +1194,40 @@ body {
         background: #ffffff;
     }
 
+    /* The slip is as wide as the paper allows, so the text lands on the
+       roll at its true size instead of being scaled down to fit. */
     .receipt-sheet {
         max-width: none;
-        width: 80mm;
+        width: 72mm;
         margin: 0 auto;
         padding: 0;
         border-radius: 0;
         box-shadow: none;
-        font-size: 13px;
+        font-size: 15px;
     }
 
-    /* The screen receipt is bigger; the printed slip keeps its old size. */
     .receipt-logo {
-        width: 54px;
-        height: 54px;
-        margin-bottom: 8px;
+        width: 68px;
+        height: 68px;
+        margin-bottom: 10px;
     }
 
     .receipt-name {
-        font-size: 18px;
+        font-size: 22px;
     }
 
-    .receipt-address,
+    .receipt-address {
+        font-size: 12px;
+    }
+
     .receipt-tx,
     .receipt-heading,
     .receipt-message {
-        font-size: 11px;
+        font-size: 12px;
     }
 
     .receipt-total {
-        font-size: 15px;
+        font-size: 17px;
     }
 
     .receipt-actions {
