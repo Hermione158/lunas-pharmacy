@@ -283,6 +283,34 @@
     var pendingPayment = null;
     var payingOpen = false;
 
+    // --- The loading screen ---
+    // Shown in the middle of the screen while the register works, so the
+    // cashier is never left wondering whether the click went through.
+    var loadingOverlay = document.getElementById("loading-overlay");
+    var loadingText = document.getElementById("loading-text");
+    var loadingOpen = false;
+    var saving = false;
+    var LOADING_MS = 600;
+
+    function showLoading(message) {
+        if (!loadingOverlay) return;
+        if (loadingText) loadingText.textContent = message;
+        loadingOpen = true;
+        loadingOverlay.hidden = false;
+    }
+
+    function hideLoading() {
+        if (!loadingOverlay) return;
+        loadingOverlay.hidden = true;
+        loadingOpen = false;
+    }
+
+    function wait(ms) {
+        return new Promise(function (resolve) {
+            setTimeout(resolve, ms);
+        });
+    }
+
     function openPaymentPanel(total) {
         if (!paymentOverlay) return;
         paymentDue = total;
@@ -342,6 +370,9 @@
 
     // The sale is saved once the cashier confirms the money received.
     async function completeSale() {
+        // One sale at a time: a second Enter must never send a second sale.
+        if (saving) return;
+
         var received = receivedAmount();
         if (!(received >= paymentDue) || paymentDue <= 0) {
             updatePaymentPanel();
@@ -354,6 +385,10 @@
             return;
         }
 
+        saving = true;
+        showLoading("Saving the sale...");
+        var started = Date.now();
+
         var result;
         try {
             result = await Api.checkout({
@@ -363,9 +398,19 @@
                 discountPct: readDiscountPct()
             });
         } catch (err) {
+            // The money is still on the counter: put the panel back and let
+            // the cashier try again.
+            hideLoading();
+            saving = false;
             if (!handleAuthError(err)) alert(err.message);
             return;
         }
+
+        // Keep the loading screen up long enough to be read.
+        var left = LOADING_MS - (Date.now() - started);
+        if (left > 0) await wait(left);
+        hideLoading();
+        saving = false;
 
         pendingPayment = { received: received, change: Api.round2(received - paymentDue) };
         closePaymentPanel();
@@ -377,7 +422,7 @@
         renderCart();
     }
 
-    document.getElementById("checkout-btn").addEventListener("click", function () {
+    document.getElementById("checkout-btn").addEventListener("click", async function () {
         var keys = Object.keys(cart);
         if (keys.length === 0) {
             alert("The sale is empty. Add a product first.");
@@ -390,7 +435,11 @@
 
         var off = discountAmount(gross, readDiscountPct());
         var total = Api.round2(gross - off);
+
+        showLoading("Opening the payment...");
+        await wait(LOADING_MS);
         openPaymentPanel(total);
+        hideLoading();
     });
 
     if (paymentInput) {
@@ -441,9 +490,11 @@
     }
 
     // Esc cancels the payment. The dimmed background does not close it:
-    // this is money, not a picture.
+    // this is money, not a picture. While the register is working, Esc does
+    // nothing at all.
     document.addEventListener("keydown", function (e) {
         if (e.key !== "Escape") return;
+        if (loadingOpen) return;
         if (payingOpen) {
             e.preventDefault();
             closePaymentPanel();
@@ -700,6 +751,14 @@
             scanFeedback(busy, "error");
             playBeep("error");
             return { ok: false, message: busy };
+        }
+
+        // While the register is working, nothing may join the sale either.
+        if (loadingOpen) {
+            var waitMsg = "Please wait...";
+            scanFeedback(waitMsg, "error");
+            playBeep("error");
+            return { ok: false, message: waitMsg };
         }
 
         var product = byBarcode[text];

@@ -611,6 +611,66 @@ body {
     cursor: not-allowed;
 }
 
+/* --- The loading screen --- */
+.loading-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 150;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background: rgba(24, 14, 32, 0.78);
+    animation: barcode-fade 160ms ease-out;
+}
+
+.loading-overlay[hidden] {
+    display: none;
+}
+
+.loading-panel {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    min-width: 280px;
+    background: #ffffff;
+    border-radius: 22px;
+    padding: 40px 56px;
+    box-shadow: 0 24px 70px rgba(0, 0, 0, 0.45);
+    animation: barcode-in 190ms cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
+.loading-spinner {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    border: 6px solid #e9ddf2;
+    border-top-color: #7b4fa6;
+    animation: loading-spin 800ms linear infinite;
+}
+
+@keyframes loading-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.loading-text {
+    font-size: 20px;
+    font-weight: 800;
+    color: #382449;
+    text-align: center;
+}
+
+@media (max-width: 520px) {
+    .loading-panel {
+        min-width: 0;
+        width: 100%;
+        padding: 34px 24px;
+    }
+}
+
 
 .scan-feedback {
     margin: 0;
@@ -1005,27 +1065,27 @@ body {
 
 .receipt-sheet {
     width: 100%;
-    max-width: 320px;
-    padding: 22px 20px;
+    max-width: 420px;
+    padding: 30px 28px;
     border-radius: 4px;
     background: #ffffff;
     color: #1e1e1e;
     font-family: "Courier New", Consolas, monospace;
-    font-size: 13px;
+    font-size: 15px;
     line-height: 1.45;
     box-shadow: 0 18px 50px rgba(0, 0, 0, 0.35);
 }
 
 .receipt-logo {
     display: block;
-    width: 54px;
-    height: 54px;
-    margin: 0 auto 8px auto;
+    width: 68px;
+    height: 68px;
+    margin: 0 auto 10px auto;
     object-fit: contain;
 }
 
 .receipt-name {
-    font-size: 18px;
+    font-size: 22px;
     font-weight: 700;
     letter-spacing: 2px;
     text-align: center;
@@ -1033,7 +1093,7 @@ body {
 
 .receipt-address {
     margin-top: 4px;
-    font-size: 11px;
+    font-size: 13px;
     text-align: center;
 }
 
@@ -1044,7 +1104,7 @@ body {
 
 .receipt-tx {
     margin-top: 2px;
-    font-size: 11px;
+    font-size: 12px;
     text-align: center;
     color: #555555;
 }
@@ -1055,7 +1115,7 @@ body {
 }
 
 .receipt-heading {
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 700;
     letter-spacing: 1px;
 }
@@ -1068,7 +1128,7 @@ body {
     display: flex;
     justify-content: space-between;
     gap: 12px;
-    padding: 3px 0;
+    padding: 4px 0;
 }
 
 .receipt-item-label {
@@ -1085,18 +1145,18 @@ body {
     display: flex;
     justify-content: space-between;
     gap: 12px;
-    padding: 2px 0;
+    padding: 3px 0;
 }
 
 .receipt-total {
     margin-top: 4px;
-    font-size: 15px;
+    font-size: 17px;
     font-weight: 700;
 }
 
 .receipt-message {
     margin: 0;
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 700;
     letter-spacing: 1px;
     text-align: center;
@@ -1106,7 +1166,7 @@ body {
     display: flex;
     gap: 10px;
     width: 100%;
-    max-width: 320px;
+    max-width: 420px;
 }
 
 .receipt-actions .btn-checkout,
@@ -1141,6 +1201,29 @@ body {
         padding: 0;
         border-radius: 0;
         box-shadow: none;
+        font-size: 13px;
+    }
+
+    /* The screen receipt is bigger; the printed slip keeps its old size. */
+    .receipt-logo {
+        width: 54px;
+        height: 54px;
+        margin-bottom: 8px;
+    }
+
+    .receipt-name {
+        font-size: 18px;
+    }
+
+    .receipt-address,
+    .receipt-tx,
+    .receipt-heading,
+    .receipt-message {
+        font-size: 11px;
+    }
+
+    .receipt-total {
+        font-size: 15px;
     }
 
     .receipt-actions {
