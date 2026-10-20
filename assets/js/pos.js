@@ -422,6 +422,7 @@
     // USB scanners act like a keyboard: they type the code and press Enter.
     var scanFeedbackEl = document.getElementById("scan-feedback");
     var scanFeedbackTimer = null;
+    var audioContext = null;
 
     // A short message under the scan box, so the cashier sees what happened
     // without having to look away from the items being scanned.
@@ -437,6 +438,74 @@
         }, 2500);
     }
 
+    // The sound a barcode reader makes: a short high "tut" when the code is
+    // good, a low double buzz when something is wrong. It is made with the
+    // Web Audio API, so no sound file is needed.
+    function playBeep(kind) {
+        try {
+            var Ctx = window.AudioContext || window.webkitAudioContext;
+            if (!Ctx) return;
+            if (!audioContext) audioContext = new Ctx();
+            if (audioContext.state === "suspended" && audioContext.resume) audioContext.resume();
+
+            var now = audioContext.currentTime;
+            var gain = audioContext.createGain();
+            gain.connect(audioContext.destination);
+
+            var tone = audioContext.createOscillator();
+            tone.connect(gain);
+
+            if (kind === "error") {
+                // Two low pulses: "that code did not work".
+                tone.type = "square";
+                tone.frequency.setValueAtTime(300, now);
+                gain.gain.setValueAtTime(0.0001, now);
+                gain.gain.exponentialRampToValueAtTime(0.12, now + 0.01);
+                gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.12);
+                gain.gain.exponentialRampToValueAtTime(0.12, now + 0.16);
+                gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.28);
+                tone.start(now);
+                tone.stop(now + 0.3);
+            } else {
+                // One short high beep: "code read".
+                tone.type = "sine";
+                tone.frequency.setValueAtTime(1100, now);
+                gain.gain.setValueAtTime(0.0001, now);
+                gain.gain.exponentialRampToValueAtTime(0.15, now + 0.01);
+                gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.12);
+                tone.start(now);
+                tone.stop(now + 0.14);
+            }
+        } catch (e) {
+            // No sound is better than a broken scan.
+        }
+    }
+
+    // One place that decides what a scanned code means. The keyboard reader and
+    // the camera both come here, so they behave exactly the same.
+    function handleScanCode(code) {
+        var text = String(code || "").trim();
+        if (!text) return false;
+
+        var product = byBarcode[text];
+        if (!product) {
+            scanFeedback("No product with barcode " + text + ". Check the sticker, or save that code on the item in Update Inventory.", "error");
+            playBeep("error");
+            return false;
+        }
+        if (stockLeftFor(product) <= 0) {
+            scanFeedback("No more stock available for " + product.name + ".", "warn");
+            playBeep("error");
+            return false;
+        }
+
+        addToCart(product);
+        var qty = cart[product.id] ? cart[product.id].qty : 0;
+        scanFeedback("Added " + product.name + " - now " + qty + " in the sale.", "ok");
+        playBeep("ok");
+        return true;
+    }
+
     if (scanInput) {
         scanInput.addEventListener("keydown", function (e) {
             if (e.key !== "Enter") return;
@@ -445,24 +514,131 @@
             scanInput.value = "";
             if (!code) return;
 
-            var product = byBarcode[code];
-            if (!product) {
-                scanFeedback("No product with barcode " + code + ". Check the sticker, or save that code on the item in Update Inventory.", "error");
-                scanInput.focus();
-                return;
-            }
-            if (stockLeftFor(product) <= 0) {
-                scanFeedback("No more stock available for " + product.name + ".", "warn");
-                scanInput.focus();
-                return;
-            }
-
-            addToCart(product);
-            var qty = cart[product.id] ? cart[product.id].qty : 0;
-            scanFeedback("Added " + product.name + " - now " + qty + " in the sale.", "ok");
+            handleScanCode(code);
             scanInput.focus();
         });
     }
+
+    // --- Scanning with the camera ---
+    // Works with a laptop camera and with a phone camera. The code is read by
+    // ZXing, which understands the Code 128 stickers from the Labels page and
+    // the EAN/UPC codes printed on the boxes.
+    var cameraOverlay = document.getElementById("camera-overlay");
+    var cameraVideo = document.getElementById("camera-video");
+    var cameraStatus = document.getElementById("camera-status");
+    var cameraBtn = document.getElementById("camera-btn");
+    var cameraReader = null;
+    var cameraControls = null;
+    var lastCameraCode = "";
+    var lastCameraTime = 0;
+
+    function setCameraStatus(text, kind) {
+        if (!cameraStatus) return;
+        cameraStatus.textContent = text;
+        cameraStatus.className = "camera-status" + (kind ? " " + kind : "");
+    }
+
+    function stopCameraScan() {
+        try {
+            if (cameraControls && cameraControls.stop) cameraControls.stop();
+        } catch (e) { /* the reader is already gone */ }
+        try {
+            if (cameraReader) cameraReader.reset();
+        } catch (e) { /* the reader is already gone */ }
+        cameraControls = null;
+        cameraReader = null;
+        if (cameraOverlay) cameraOverlay.hidden = true;
+        if (cameraVideo) {
+            try {
+                cameraVideo.pause();
+                cameraVideo.srcObject = null;
+            } catch (e) { /* the video never started */ }
+        }
+        if (scanInput) scanInput.focus();
+    }
+
+    function startCameraScan() {
+        if (!cameraOverlay) return;
+
+        if (!window.ZXing || !window.ZXing.BrowserMultiFormatReader) {
+            cameraOverlay.hidden = false;
+            setCameraStatus("The camera scanner could not be loaded. Refresh the page and try again.", "error");
+            playBeep("error");
+            return;
+        }
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            cameraOverlay.hidden = false;
+            setCameraStatus("This browser cannot use the camera. Please use a barcode reader instead.", "error");
+            playBeep("error");
+            return;
+        }
+
+        cameraOverlay.hidden = false;
+        setCameraStatus("Point the camera at a barcode...", "");
+
+        var hints = new Map();
+        hints.set(window.ZXing.DecodeHintType.POSSIBLE_FORMATS, [
+            window.ZXing.BarcodeFormat.CODE_128,
+            window.ZXing.BarcodeFormat.EAN_13,
+            window.ZXing.BarcodeFormat.EAN_8,
+            window.ZXing.BarcodeFormat.UPC_A,
+            window.ZXing.BarcodeFormat.UPC_E
+        ]);
+        hints.set(window.ZXing.DecodeHintType.TRY_HARDER, true);
+
+        cameraReader = new window.ZXing.BrowserMultiFormatReader(hints, 120);
+
+        // No device id means "the back camera if there is one". A laptop only
+        // has the webcam, and the browser picks that one instead.
+        var started = cameraReader.decodeFromVideoDevice(undefined, cameraVideo, function (result) {
+            if (!result) return;
+            var text = result.getText ? result.getText() : "";
+            if (!text) return;
+
+            // The camera reads the same sticker many times a second, so one
+            // sticker is only taken once.
+            var now = Date.now();
+            if (text === lastCameraCode && now - lastCameraTime < 1200) return;
+            lastCameraCode = text;
+            lastCameraTime = now;
+
+            setCameraStatus("Scanned " + text, "ok");
+            handleScanCode(text);
+        });
+
+        if (started && started.then) {
+            started.then(function (controls) {
+                cameraControls = controls;
+            }).catch(function () {
+                setCameraStatus("The camera could not be started. Allow camera access and try again.", "error");
+                playBeep("error");
+            });
+        }
+    }
+
+    if (cameraBtn) {
+        cameraBtn.addEventListener("click", function () {
+            if (cameraOverlay && cameraOverlay.hidden === false) {
+                stopCameraScan();
+                return;
+            }
+            startCameraScan();
+        });
+    }
+
+    var cameraCloseBtn = document.getElementById("camera-close-btn");
+    if (cameraCloseBtn) {
+        cameraCloseBtn.addEventListener("click", stopCameraScan);
+    }
+
+    // Esc closes the camera view.
+    document.addEventListener("keydown", function (e) {
+        if (e.key !== "Escape") return;
+        if (cameraOverlay && cameraOverlay.hidden === false) {
+            e.preventDefault();
+            stopCameraScan();
+        }
+    });
 
     async function init() {
         var me;

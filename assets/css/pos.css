@@ -132,6 +132,106 @@ body {
     box-shadow: 0 0 0 3px rgba(123, 79, 166, 0.18);
 }
 
+.scan-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    max-width: 620px;
+}
+
+.scan-row .scan-input {
+    flex: 1 1 auto;
+    max-width: none;
+}
+
+.camera-btn {
+    flex: 0 0 auto;
+    background: #ffffff;
+    color: #382449;
+    border: 2px solid #382449;
+    border-radius: 999px;
+    padding: 13px 18px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.2s ease, color 0.2s ease;
+}
+
+.camera-btn:hover {
+    background: #382449;
+    color: #ffcad6;
+}
+
+.camera-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 120;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background: rgba(30, 30, 30, 0.62);
+}
+
+.camera-overlay[hidden] {
+    display: none;
+}
+
+.camera-panel {
+    width: 100%;
+    max-width: 520px;
+    background: #ffffff;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 18px 50px rgba(0, 0, 0, 0.35);
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding: 20px;
+}
+
+.camera-title {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 700;
+    color: #382449;
+}
+
+.camera-video {
+    width: 100%;
+    max-height: 58vh;
+    border-radius: 14px;
+    background: #1e1e1e;
+    object-fit: contain;
+}
+
+.camera-status {
+    margin: 0;
+    min-height: 20px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #4a3550;
+}
+
+.camera-status.ok {
+    color: #2e6b4f;
+}
+
+.camera-status.error {
+    color: #a3223c;
+}
+
+.camera-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.camera-actions .btn-clear {
+    width: 100%;
+}
+
 .scan-feedback {
     margin: 0;
     max-width: 420px;

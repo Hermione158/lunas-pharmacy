@@ -25,7 +25,10 @@
     <main class="pos-main">
         <section class="catalog">
             <div class="catalog-tools">
-                <input type="text" id="scan-input" class="scan-input" placeholder="Scan barcode, then press Enter..." aria-label="Scan barcode" autocomplete="off" />
+                <div class="scan-row">
+                    <input type="text" id="scan-input" class="scan-input" placeholder="Scan barcode, then press Enter..." aria-label="Scan barcode" autocomplete="off" />
+                    <button type="button" id="camera-btn" class="camera-btn" title="Scan a barcode with the camera instead of a reader">Use camera</button>
+                </div>
                 <p id="scan-feedback" class="scan-feedback" role="status" aria-live="polite" hidden></p>
                 <input type="text" id="search-input" class="search-input" placeholder="Search product..." aria-label="Search products" />
                 <div id="cat-filters" class="cat-filters"></div>
@@ -58,6 +61,17 @@
         </aside>
     </main>
 
+    <div id="camera-overlay" class="camera-overlay" hidden>
+        <div class="camera-panel">
+            <h2 class="camera-title">Scan with the camera</h2>
+            <video id="camera-video" class="camera-video" playsinline muted></video>
+            <p id="camera-status" class="camera-status">Point the camera at a barcode...</p>
+            <div class="camera-actions">
+                <button type="button" id="camera-close-btn" class="btn-clear">Close</button>
+            </div>
+        </div>
+    </div>
+
     <div id="receipt-overlay" class="receipt-overlay" hidden>
         <div class="receipt-sheet" id="receipt">
             <img class="receipt-logo" src="assets/images/logo.png" alt="" />
@@ -87,6 +101,7 @@
 
     <script src="assets/js/api.js"></script>
 <script src="assets/js/confirm.js"></script>
+    <script src="assets/js/zxing.min.js"></script>
     <script src="assets/js/pos.js"></script>
 </body>
 </html>
