@@ -212,7 +212,7 @@
 
             var line = document.createElement("div");
             line.className = "line";
-            line.textContent = currency(it.qty * it.price) + "  (" + currency(it.price + " each") + ")";
+            line.textContent = currency(it.qty * it.price) + "  (" + currency(it.price) + " each)";
 
             var qtyCtrl = document.createElement("div");
             qtyCtrl.className = "qty-control";
@@ -420,6 +420,23 @@
 
     // --- Barcode scanning ---
     // USB scanners act like a keyboard: they type the code and press Enter.
+    var scanFeedbackEl = document.getElementById("scan-feedback");
+    var scanFeedbackTimer = null;
+
+    // A short message under the scan box, so the cashier sees what happened
+    // without having to look away from the items being scanned.
+    function scanFeedback(text, kind) {
+        if (!scanFeedbackEl) return;
+        scanFeedbackEl.textContent = text;
+        scanFeedbackEl.className = "scan-feedback" + (kind ? " " + kind : "");
+        scanFeedbackEl.hidden = false;
+        clearTimeout(scanFeedbackTimer);
+        scanFeedbackTimer = setTimeout(function () {
+            scanFeedbackEl.textContent = "";
+            scanFeedbackEl.hidden = true;
+        }, 2500);
+    }
+
     if (scanInput) {
         scanInput.addEventListener("keydown", function (e) {
             if (e.key !== "Enter") return;
@@ -430,10 +447,19 @@
 
             var product = byBarcode[code];
             if (!product) {
-                alert("No product with barcode " + code + ".");
+                scanFeedback("No product with barcode " + code + ". Check the sticker, or save that code on the item in Update Inventory.", "error");
+                scanInput.focus();
                 return;
             }
+            if (stockLeftFor(product) <= 0) {
+                scanFeedback("No more stock available for " + product.name + ".", "warn");
+                scanInput.focus();
+                return;
+            }
+
             addToCart(product);
+            var qty = cart[product.id] ? cart[product.id].qty : 0;
+            scanFeedback("Added " + product.name + " - now " + qty + " in the sale.", "ok");
             scanInput.focus();
         });
     }
@@ -476,6 +502,10 @@
         buildFilters();
         renderList();
         renderCart();
+
+        // The scan box is ready right away, so the first item can be scanned
+        // without touching the mouse.
+        if (scanInput) scanInput.focus();
     }
 
     init();

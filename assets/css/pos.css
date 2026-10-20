@@ -132,6 +132,32 @@ body {
     box-shadow: 0 0 0 3px rgba(123, 79, 166, 0.18);
 }
 
+.scan-feedback {
+    margin: 0;
+    max-width: 420px;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.4;
+    color: #2e6b4f;
+}
+
+.scan-feedback[hidden] {
+    display: none;
+}
+
+.scan-feedback.ok {
+    color: #2e6b4f;
+}
+
+.scan-feedback.warn {
+    color: #8a5a00;
+}
+
+.scan-feedback.error {
+    color: #a3223c;
+}
+
+
 .cat-filters {
     display: flex;
     flex-wrap: wrap;
