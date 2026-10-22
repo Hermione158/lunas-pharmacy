@@ -826,7 +826,7 @@ body {
 .inv-price-box .inv-input {
     width: auto;
     flex: 1 1 auto;
-    min-width: 56px;
+    min-width: 39px;
     font-size: 13px;
 }
 
@@ -835,7 +835,7 @@ body {
     display: flex;
     align-items: center;
     width: 80%;
-    max-width: 90px;
+    max-width: 80px;
 }
 
 .inv-stock-box .inv-input {
