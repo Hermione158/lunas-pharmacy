@@ -1304,7 +1304,6 @@ body {
 
 /* Keep password fields aligned with other inputs in the accounts toolbar */
 .inv-toolbar .password-field {
-    flex: 1 1 200px;
-    margin-left: 12px;
-    max-width: 260px;
+    flex: 1 1 260px;
+    margin-left: 0;
 }
