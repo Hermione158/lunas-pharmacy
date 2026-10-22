@@ -775,6 +775,7 @@
                 await reload();
                 buildChips();
                 await loadLog();
+                await loadCategories();
                 flash("Inventory refreshed.");
             } catch (err) {
                 handleAuthError(err);
@@ -858,6 +859,125 @@
         logSearch.addEventListener("input", applyLogFilter);
     }
 
+    // --- Category manager (view page) ---
+    // A rename touches every item on that shelf; naming an existing category
+    // merges the two, so duplicate spellings can be tidied up in one move.
+    var categoryTable = document.getElementById("category-table");
+    var categoryBody = categoryTable ? categoryTable.querySelector("tbody") : null;
+    var categoryNames = [];
+
+    function renderCategories(list) {
+        categoryNames = (list || []).map(function (c) { return c.name; });
+        if (!categoryBody) return;
+
+        categoryBody.innerHTML = (list || []).map(function (c) {
+            return '<tr data-cat-name="' + esc(c.name) + '" data-count="' + c.count + '">' +
+                "<td>" + esc(c.name) + "</td>" +
+                '<td><span class="badge">' + c.count + "</span></td>" +
+                '<td><input class="inv-input" data-field="rename" type="text" placeholder="New name or existing category" /></td>' +
+                '<td><div class="row-actions">' +
+                '<button type="button" class="icon-btn icon-rename">Rename</button>' +
+                '<button type="button" class="icon-btn icon-clear">Uncategorize</button>' +
+                "</div></td></tr>";
+        }).join("");
+
+        var empty = document.getElementById("category-empty");
+        if (empty) empty.style.display = (list || []).length ? "none" : "block";
+    }
+
+    async function loadCategories() {
+        if (!categoryBody) return;
+        try {
+            renderCategories(await Api.getCategories());
+        } catch (err) {
+            if (handleAuthError(err)) return;
+            categoryBody.innerHTML = '<tr><td colspan="4">Could not load categories. ' + esc(err.message) + "</td></tr>";
+        }
+    }
+
+    if (categoryTable) {
+        categoryTable.addEventListener("keydown", function (e) {
+            if (e.key !== "Enter") return;
+            var input = e.target;
+            if (!input || !input.getAttribute || input.getAttribute("data-field") !== "rename") return;
+            var row = input.closest ? input.closest("tr") : null;
+            var button = row ? row.querySelector(".icon-rename") : null;
+            if (button) {
+                e.preventDefault();
+                button.click();
+            }
+        });
+
+        categoryTable.addEventListener("click", async function (e) {
+            var btn = e.target;
+            if (!btn.classList) return;
+            var renaming = btn.classList.contains("icon-rename");
+            var clearing = btn.classList.contains("icon-clear");
+            if (!renaming && !clearing) return;
+
+            var row = btn.closest ? btn.closest("tr") : null;
+            if (!row) return;
+
+            var from = row.getAttribute("data-cat-name") || "";
+            var count = Number(row.getAttribute("data-count")) || 0;
+
+            if (renaming) {
+                var input = row.querySelector('[data-field="rename"]');
+                var to = input ? input.value.trim() : "";
+                if (!to) {
+                    flash("Enter the new category name.");
+                    if (input) input.focus();
+                    return;
+                }
+                if (to === from) {
+                    flash("That is already the category name.");
+                    return;
+                }
+
+                var merging = categoryNames.indexOf(to) !== -1;
+                var renameGo = await showConfirm({
+                    title: merging ? "Merge these categories?" : "Rename this category?",
+                    message: merging
+                        ? "Rename \"" + from + "\" to \"" + to + "\"? Both categories will be merged."
+                        : "Rename \"" + from + "\" to \"" + to + "\" in " + count + " item(s)?",
+                    confirmText: merging ? "Yes, Merge" : "Yes, Rename"
+                });
+                if (!renameGo) return;
+
+                try {
+                    var renamed = await Api.renameCategory(from, to);
+                    await reload();
+                    buildChips();
+                    await loadCategories();
+                    flash(renamed.moved
+                        ? "Renamed \"" + from + "\" to \"" + to + "\" in " + renamed.moved + " item(s)."
+                        : "Nothing needed to change.");
+                } catch (err) {
+                    if (!handleAuthError(err)) flash(err.message);
+                }
+            } else {
+                var clearGo = await showConfirm({
+                    title: "Clear this category?",
+                    message: "Move " + count + " item(s) from \"" + from + "\" to Uncategorized?",
+                    confirmText: "Yes, Uncategorize"
+                });
+                if (!clearGo) return;
+
+                try {
+                    var cleared = await Api.clearCategory(from);
+                    await reload();
+                    buildChips();
+                    await loadCategories();
+                    flash(cleared.moved
+                        ? "Moved " + cleared.moved + " item(s) to Uncategorized."
+                        : "Nothing needed to change.");
+                } catch (err) {
+                    if (!handleAuthError(err)) flash(err.message);
+                }
+            }
+        });
+    }
+
     function revealChrome() {
         // --- Show the signed-in role ---
         var roleLabel = document.getElementById("role-label");
@@ -896,6 +1016,7 @@
             await reload();
             buildChips();
             await loadLog();
+            await loadCategories();
         } catch (err) {
             if (!handleAuthError(err)) {
                 tbody.innerHTML = "<tr><td colspan=\"6\">Could not load inventory. " + esc(err.message) + "</td></tr>";

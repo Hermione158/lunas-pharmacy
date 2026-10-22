@@ -129,6 +129,15 @@
         importSampleCatalog: function () {
             return request("/api/products/import", { method: "POST" });
         },
+        getCategories: function () {
+            return request("/api/categories").then(function (data) { return data.categories; });
+        },
+        renameCategory: function (from, to) {
+            return request("/api/categories", { method: "POST", body: { action: "rename", from: from, to: to } });
+        },
+        clearCategory: function (from) {
+            return request("/api/categories", { method: "POST", body: { action: "clear", from: from } });
+        },
         getMovements: function (limit) {
             return request("/api/movements?limit=" + encodeURIComponent(String(limit || 100)))
                 .then(function (data) { return data.movements; });
