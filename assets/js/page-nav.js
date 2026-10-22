@@ -12,9 +12,19 @@
 
     function setActive(link) {
         links.forEach(function (item) {
-            item.classList.toggle("active", item === link);
+            var on = item === link;
+            item.classList.toggle("active", on);
+            if (on) item.setAttribute("aria-current", "true");
+            else item.removeAttribute("aria-current");
         });
     }
+
+    // The markup starts with the first section selected; mirror that for
+    // screen readers too.
+    var initial = links.filter(function (link) {
+        return link.classList.contains("active");
+    })[0];
+    if (initial) setActive(initial);
 
     function scrollToTarget(target) {
         var reduceMotion = window.matchMedia &&
