@@ -119,6 +119,17 @@
             "</div>";
     }
 
+    // The peso sign sits beside the field as decoration, so changing a price
+    // never means typing around it. The field itself holds only the number.
+    function priceCell(value) {
+        return '<div class="inv-price-box">' +
+            '<span class="inv-price-peso" aria-hidden="true">₱</span>' +
+            '<input class="inv-input narrow" data-field="p" type="text" value="' +
+            (value === "" || value === undefined || value === null ? "" : esc(Number(value).toFixed(2))) +
+            '" placeholder="0.00" />' +
+            "</div>";
+    }
+
     // --- Categories: shared by the chips and the dropdown suggestions ---
     function distinctCategories() {
         var seen = {};
@@ -186,7 +197,7 @@
                     "<td>" + itemCellEdit(p) + "</td>" +
                     "<td>" + barcodeCell(p.barcode) + "</td>" +
                     '<td><input class="inv-input" data-field="c" type="text" list="inv-category-list" value="' + esc(p.category) + '" /></td>' +
-                    '<td><input class="inv-input narrow" data-field="p" type="text" value="' + currency(p.price) + '" /></td>' +
+                    "<td>" + priceCell(p.price) + "</td>" +
                     '<td><input class="inv-input narrow" data-field="s" type="number" min="0" value="' + p.stock + '" /></td>' +
                     '<td><span class="badge ' + st.cls + '">' + st.label + "</span></td>" +
                     '<td><div class="row-actions">' +
@@ -585,7 +596,7 @@
                 "</div></td>" +
                 "<td>" + barcodeCell("") + "</td>" +
                 '<td><input class="inv-input" data-field="c" type="text" list="inv-category-list" placeholder="Category" /></td>' +
-                '<td><input class="inv-input narrow" data-field="p" type="text" placeholder="0.00" /></td>' +
+                "<td>" + priceCell("") + "</td>" +
                 '<td><input class="inv-input narrow" data-field="s" type="number" min="0" value="0" /></td>' +
                 '<td><span class="badge badge-in">In stock</span></td>' +
                 '<td><div class="row-actions">' +

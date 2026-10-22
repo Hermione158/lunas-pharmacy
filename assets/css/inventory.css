@@ -717,6 +717,24 @@ body {
     background: #f4f0f3;
 }
 
+/* Price field: the peso sign is decoration, not text to type around. */
+.inv-price-box {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.inv-price-peso {
+    color: #8a7484;
+    font-weight: 700;
+}
+
+.inv-price-box .inv-input {
+    width: auto;
+    flex: 1 1 auto;
+    min-width: 64px;
+}
+
 /* Row actions */
 .row-actions {
     display: flex;
