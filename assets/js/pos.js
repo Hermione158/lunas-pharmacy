@@ -182,14 +182,14 @@
     }
 
     // The cashier types a percentage; the peso amount is derived from the running gross.
-    // Senior Citizen and PWD discounts are fixed at 20%; any manual entry is capped at 20%.
+    // Senior Citizen and PWD discounts are fixed at 20%; any manual entry that exceeds
+    // 20% is kept visible so the cashier can see what they typed, but the sale is blocked.
     function readDiscountPct() {
         if (discountType && (discountType.value === "senior" || discountType.value === "pwd")) {
             return 20;
         }
         var value = Number(discountInput.value) || 0;
         if (value < 0) value = 0;
-        if (value > 20) value = 20;
         return Api.round2(value);
     }
 
@@ -329,6 +329,8 @@
             paymentChangeEl.className = "payment-change";
         }
         if (paymentCompleteBtn) paymentCompleteBtn.disabled = true;
+        var paymentErr = document.getElementById("payment-error");
+        if (paymentErr) paymentErr.hidden = true;
 
         paymentOverlay.hidden = false;
         if (paymentInput) {
@@ -378,9 +380,14 @@
     async function completeSale() {
         // One sale at a time: a second Enter must never send a second sale.
         if (saving) return;
-        if (discountBlocked) {
+
+        var pct = readDiscountPct();
+        if (pct > 20 || discountBlocked) {
+            var paymentErr = document.getElementById("payment-error");
+            if (paymentErr) paymentErr.hidden = false;
             var msg = document.getElementById("discount-limit");
             if (msg) msg.hidden = false;
+            alert("Discount cannot exceed 20%.");
             return;
         }
 
@@ -429,16 +436,14 @@
 
         cart = {};
         discountInput.value = "";
+        discountBlocked = false;
+        var limitMsgClear = document.getElementById("discount-limit");
+        if (limitMsgClear) limitMsgClear.hidden = true;
         await loadProducts();
         renderCart();
     }
 
     document.getElementById("checkout-btn").addEventListener("click", async function () {
-        if (discountBlocked) {
-            var msg = document.getElementById("discount-limit");
-            if (msg) { msg.hidden = false; }
-            return;
-        }
         var keys = Object.keys(cart);
         if (keys.length === 0) {
             alert("The sale is empty. Add a product first.");
@@ -450,7 +455,7 @@
         }, 0));
 
         var off = discountAmount(gross, readDiscountPct());
-        var total = Api.round2(gross - off);
+        var total = Api.round2(Math.max(0, gross - off));
 
         showLoading("Opening the payment...");
         await wait(LOADING_MS);
@@ -529,6 +534,9 @@
 
         cart = {};
         discountInput.value = "";
+        discountBlocked = false;
+        var limitMsgClear = document.getElementById("discount-limit");
+        if (limitMsgClear) limitMsgClear.hidden = true;
         if (discountType) { discountType.value = "none"; discountInput.disabled = false; }
         renderCart();
         renderList();
@@ -547,26 +555,13 @@
 
     discountInput.addEventListener("input", function () {
         var limitMsg = document.getElementById("discount-limit");
-        var checkoutBtn = document.getElementById("checkout-btn");
         var value = Number(discountInput.value) || 0;
         if (value > 20) {
-            discountInput.value = "20";
             discountBlocked = true;
-            if (checkoutBtn) checkoutBtn.disabled = true;
-            if (limitMsg) {
-                limitMsg.hidden = false;
-                clearTimeout(limitMsg._t);
-                limitMsg._t = setTimeout(function () {
-                    limitMsg.hidden = true;
-                    discountBlocked = false;
-                    if (checkoutBtn) checkoutBtn.disabled = false;
-                }, 2500);
-            }
+            if (limitMsg) limitMsg.hidden = false;
         } else {
             discountBlocked = false;
             if (limitMsg) limitMsg.hidden = true;
-            var checkoutBtn2 = document.getElementById("checkout-btn");
-            if (checkoutBtn2) checkoutBtn2.disabled = false;
         }
         renderCart();
     });
@@ -579,8 +574,6 @@
                 discountBlocked = false;
                 var limitMsg2 = document.getElementById("discount-limit");
                 if (limitMsg2) limitMsg2.hidden = true;
-                var checkoutBtn3 = document.getElementById("checkout-btn");
-                if (checkoutBtn3) checkoutBtn3.disabled = false;
             } else {
                 discountInput.disabled = false;
             }

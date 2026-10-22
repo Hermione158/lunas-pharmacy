@@ -56,7 +56,7 @@
                 <label class="discount-row" for="discount-input">
                     <span>Manual %</span>
                     <span class="discount-wrap">
-                        <input type="number" id="discount-input" class="discount-input" min="0" max="20" step="0.01" placeholder="0" aria-label="Discount percentage" />
+                        <input type="number" id="discount-input" class="discount-input" min="0" max="100" step="0.01" placeholder="0" aria-label="Discount percentage" />
                         <span class="discount-suffix" aria-hidden="true">%</span>
                     </span>
                 </label>
@@ -137,6 +137,7 @@
                 <button type="button" class="payment-bill exact" id="payment-exact">Exact</button>
             </div>
 
+            <p class="discount-limit payment-error" id="payment-error" style="margin-top: 10px; text-align: center;" hidden>Discount cannot exceed 20%.</p>
             <div class="payment-actions">
                 <button type="button" id="payment-cancel-btn" class="btn-clear">Cancel</button>
                 <button type="button" id="payment-complete-btn" class="btn-checkout" disabled>Complete Sale</button>
