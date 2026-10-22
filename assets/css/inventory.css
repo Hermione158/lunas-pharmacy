@@ -1301,3 +1301,9 @@ body {
 }
 .password-toggle:hover { opacity: 1; }
 .password-toggle.is-visible { opacity: 1; }
+
+/* Keep password fields aligned with other inputs in the accounts toolbar */
+.inv-toolbar .password-field {
+    flex: 1 1 260px;
+    margin-left: 25px;
+}
