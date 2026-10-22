@@ -200,9 +200,21 @@ body {
 }
 
 .rep-search-row .inv-search {
-    max-width: 340px;
+    width: 420px;
+    max-width: 100%;
     padding: 9px 16px;
     font-size: 14px;
+}
+
+/* Desktop: the short transaction cells stay on one line, the item list wraps */
+@media (min-width: 901px) {
+    #rep-tx-table td {
+        white-space: nowrap;
+    }
+
+    #rep-tx-table td:nth-child(4) {
+        white-space: normal;
+    }
 }
 
 .inv-chips {
