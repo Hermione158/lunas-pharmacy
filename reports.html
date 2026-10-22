@@ -72,9 +72,12 @@
                 <button type="button" class="chip" data-range="today">Today</button>
                 <button type="button" class="chip" data-range="week">This Week</button>
                 <button type="button" class="chip" data-range="month">This Month</button>
+                <button type="button" class="chip" data-range="day" id="rep-day-chip">Pick a day</button>
                 <button type="button" class="chip active" data-range="all">All Time</button>
             </div>
+            <input type="date" id="rep-day" class="rep-day" aria-label="Pick a day" />
             <button type="button" id="rep-export-btn" class="btn btn-outline">Export</button>
+            <button type="button" id="rep-print-btn" class="btn btn-outline">Print</button>
             <span class="hint" id="rep-hint"></span>
         </div>
 
@@ -186,6 +189,7 @@
                         <th>Date</th>
                         <th>Cashier</th>
                         <th>Items</th>
+                        <th>Quantity</th>
                         <th>Gross</th>
                         <th>Discount</th>
                         <th>Net</th>

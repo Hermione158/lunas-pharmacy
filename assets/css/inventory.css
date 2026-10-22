@@ -1084,3 +1084,46 @@ body {
 .user-status-chips {
     margin: 0 0 16px;
 }
+
+/* --- Reports: a day picker and a clean printed page --- */
+.rep-day {
+    padding: 9px 12px;
+    border: 1px solid #e3d5dc;
+    border-radius: 10px;
+    background: #ffffff;
+    color: #382449;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+@media print {
+    body[data-page="reports"] .inv-page-head {
+        display: block !important;
+    }
+
+    .rep-search-row,
+    #rep-dead-toggle,
+    .rep-dead-toggle,
+    .rep-chart-insight,
+    .stat-change {
+        display: none !important;
+    }
+
+    .inv-table-wrap,
+    .rep-chart-card {
+        box-shadow: none !important;
+        border: 1px solid #dddddd;
+        break-inside: avoid;
+        page-break-inside: avoid;
+    }
+
+    #rep-dead-body[hidden] {
+        display: block !important;
+    }
+
+    #rep-tx-table td,
+    #rep-tx-table th {
+        white-space: normal !important;
+    }
+}

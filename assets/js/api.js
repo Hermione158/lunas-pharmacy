@@ -19,10 +19,20 @@
         return { cls: "badge-in", label: "In stock" };
     }
 
+    // Local midnight for a "YYYY-MM-DD" day picker value, or today.
+    function dayDate(day) {
+        var parts = String(day || "").split("-").map(Number);
+        var d = parts.length === 3 && parts[0] && parts[1] && parts[2]
+            ? new Date(parts[0], parts[1] - 1, parts[2])
+            : new Date();
+        d.setHours(0, 0, 0, 0);
+        return d;
+    }
+
     // Start of the selected period in the user's local time, as an exact ISO instant.
-    function rangeFrom(range) {
+    function rangeFrom(range, day) {
         if (range === "all") return null;
-        var d = new Date();
+        var d = range === "day" ? dayDate(day) : new Date();
         if (range === "week") d.setDate(d.getDate() - d.getDay());
         if (range === "month") d.setDate(1);
         d.setHours(0, 0, 0, 0);
@@ -32,12 +42,13 @@
     // The window just before the selected one, so the report can say whether
     // the shop is up or down. It covers the same amount of time as the
     // current window, so a part-finished week is compared with a part-
-    // finished week and not with a whole one.
-    function rangePrevious(range) {
+    // finished week and not with a whole one. A chosen day is compared with
+    // the day before it.
+    function rangePrevious(range, day) {
         if (range === "all") return null;
 
         var now = new Date();
-        var start = new Date(now);
+        var start = range === "day" ? dayDate(day) : new Date(now);
         if (range === "week") start.setDate(start.getDate() - start.getDay());
         else if (range === "month") start.setDate(1);
         start.setHours(0, 0, 0, 0);
@@ -46,6 +57,10 @@
         if (range === "week") prev.setDate(prev.getDate() - 7);
         else if (range === "month") prev.setMonth(prev.getMonth() - 1);
         else prev.setDate(prev.getDate() - 1);
+
+        if (range === "day") {
+            return { from: prev.toISOString(), to: start.toISOString() };
+        }
 
         var elapsed = now.getTime() - start.getTime();
         var prevTo = new Date(prev.getTime() + elapsed);
@@ -122,13 +137,17 @@
         checkout: function (payload) {
             return request("/api/sales", { method: "POST", body: payload });
         },
-        getStats: function (range) {
-            var from = rangeFrom(range);
+        getStats: function (range, day) {
+            var from = rangeFrom(range, day);
+            var to = range === "day" && from
+                ? new Date(new Date(from).getTime() + 24 * 60 * 60 * 1000).toISOString()
+                : null;
             // Minutes ahead of UTC, so the report's buckets follow the shop's clock.
             var tz = -new Date().getTimezoneOffset();
-            var previous = rangePrevious(range);
+            var previous = rangePrevious(range, day);
             var query = "?range=" + encodeURIComponent(range || "today") +
                 (from ? "&from=" + encodeURIComponent(from) : "") +
+                (to ? "&to=" + encodeURIComponent(to) : "") +
                 "&tz=" + encodeURIComponent(String(tz));
             if (previous) {
                 query += "&prevFrom=" + encodeURIComponent(previous.from) +

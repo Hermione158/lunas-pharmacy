@@ -1,27 +1,38 @@
 // POST /api/sales  -> checkout: records the sale and deducts stock in one SQL transaction.
-// GET  /api/sales?range=today|week|month|all&from=<ISO> -> sales summary + transaction list.
+// GET  /api/sales?range=today|week|month|day|all&from=<ISO>&to=<ISO> -> sales summary + transaction list.
 "use strict";
 
 const { getPool } = require("./_lib/db");
 const { requireAuth, requireAdmin } = require("./_lib/auth");
 const { send, readBody, serverError, round2, txNo } = require("./_lib/util");
 
-const RANGES = ["today", "week", "month", "all"];
+const RANGES = ["today", "week", "month", "day", "all"];
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 function parseRange(req) {
     const range = RANGES.includes(String(req.query.range).toLowerCase())
         ? String(req.query.range).toLowerCase()
         : "today";
 
-    if (range === "all") return { range: range, from: null };
+    if (range === "all") return { range: range, from: null, to: null };
 
     const raw = req.query.from;
-    const from = raw ? new Date(String(raw)) : null;
-    if (from && !isNaN(from.getTime())) return { range: range, from: from };
+    const parsed = raw ? new Date(String(raw)) : null;
+    const valid = parsed && !isNaN(parsed.getTime());
 
     // Fallback when the client sends nothing: start of today (UTC).
     const now = new Date();
-    return { range: range, from: new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())) };
+    const from = valid
+        ? parsed
+        : new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+
+    let to = null;
+    if (range === "day") {
+        const rawTo = req.query.to ? new Date(String(req.query.to)) : null;
+        to = rawTo && !isNaN(rawTo.getTime()) ? rawTo : new Date(from.getTime() + DAY_MS);
+    }
+
+    return { range: range, from: from, to: to };
 }
 
 // The client tells us how far its clock is from UTC, so the buckets land on
@@ -37,10 +48,10 @@ function parseTz(req) {
     return sign + hh + ":" + mm;
 }
 
-// How finely the sales are grouped: by the hour for today, by the day for a
-// week or a month, by the month for everything.
+// How finely the sales are grouped: by the hour for today or a chosen day,
+// by the day for a week or a month, by the month for everything.
 function grainFor(range) {
-    if (range === "today") return "hour";
+    if (range === "today" || range === "day") return "hour";
     if (range === "all") return "month";
     return "day";
 }
@@ -239,12 +250,14 @@ async function salesVelocity(pool) {
 }
 
 async function listSales(req, res) {
-    const { range, from } = parseRange(req);
+    const { range, from, to } = parseRange(req);
     const tz = parseTz(req);
     const grain = grainFor(range);
     const pool = getPool();
-    const where = from ? "WHERE s.created_at >= ?" : "";
-    const params = from ? [from] : [];
+    const where = from
+        ? "WHERE s.created_at >= ?" + (to ? " AND s.created_at < ?" : "")
+        : "";
+    const params = from ? (to ? [from, to] : [from]) : [];
 
     const [[totals]] = await pool.query(
         "SELECT COALESCE(SUM(s.gross), 0) AS gross, COALESCE(SUM(s.discount), 0) AS discount, " +

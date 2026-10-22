@@ -26,6 +26,7 @@
 
     var currency = Api.currency;
     var currentRange = "all";
+    var currentDay = null;
     var lastStats = null;
 
     // --- Status message next to the buttons that produce it ---
@@ -41,8 +42,21 @@
         today: "Today",
         week: "This Week",
         month: "This Month",
+        day: "the chosen day",
         all: "All Time"
     };
+
+    function inputDay(date) {
+        return date.getFullYear() + "-" + String(date.getMonth() + 1).padStart(2, "0") +
+            "-" + String(date.getDate()).padStart(2, "0");
+    }
+
+    function dayPhrase() {
+        if (currentRange !== "day" || !currentDay) return RANGE_TEXT[currentRange].toLowerCase();
+        var parts = currentDay.split("-");
+        return new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]))
+            .toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+    }
 
     function esc(value) {
         return String(value)
@@ -77,7 +91,7 @@
         document.getElementById("rep-units").textContent = stats.units;
         document.getElementById("rep-avg").textContent = currency(stats.average);
         document.getElementById("range-label").textContent =
-            "Gross sales, discounts and net sales for " + RANGE_TEXT[currentRange].toLowerCase() + ".";
+            "Gross sales, discounts and net sales for " + dayPhrase() + ".";
     }
 
     // --- Compared with the window before this one ---
@@ -178,14 +192,12 @@
         return "—";
     }
 
-    // What one receipt was for: "Biogesic 500mg ×2, Alnix 10mg". The quantity
-    // is only spelled out when it is more than one, so single buys stay short.
+    // What one receipt was for: "Biogesic 500mg, Alnix 10mg". The quantity
+    // has its own column, so the names stay uncluttered.
     function itemsLabel(sale) {
         var list = (Array.isArray(sale.items) ? sale.items : []).map(function (item) {
             var name = String(item.name || "").trim();
-            if (!name) return "";
-            var qty = Number(item.qty) || 0;
-            return qty > 1 ? name + " ×" + qty : name;
+            return name;
         }).filter(Boolean);
         return list.length ? list.join(", ") : "—";
     }
@@ -199,6 +211,7 @@
                 "<td>" + esc(formatDate(sale.date)) + "</td>" +
                 "<td>" + esc(sale.cashier) + "</td>" +
                 "<td>" + esc(itemsLabel(sale)) + "</td>" +
+                "<td>" + (Number(sale.units) || 0) + "</td>" +
                 "<td>" + currency(sale.gross) + "</td>" +
                 "<td>" + esc(discountLabel(sale)) + "</td>" +
                 "<td>" + currency(sale.net) + "</td>" +
@@ -230,7 +243,7 @@
 
     function grainOf(stats) {
         if (stats && stats.grain) return stats.grain;
-        if (currentRange === "today") return "hour";
+        if (currentRange === "today" || currentRange === "day") return "hour";
         if (currentRange === "all") return "month";
         return "day";
     }
@@ -885,7 +898,7 @@
     async function render() {
         var stats;
         try {
-            stats = await Api.getStats(currentRange);
+            stats = await Api.getStats(currentRange, currentDay);
         } catch (err) {
             lastStats = null;
             if (!handleAuthError(err)) {
@@ -946,13 +959,35 @@
 
     document.getElementById("rep-ranges").querySelectorAll(".chip").forEach(function (btn) {
         btn.addEventListener("click", function () {
-            currentRange = btn.getAttribute("data-range");
+            var next = btn.getAttribute("data-range");
+            var dayInput = document.getElementById("rep-day");
+            if (next === "day") {
+                if (!currentDay) currentDay = inputDay(new Date());
+                if (dayInput) {
+                    dayInput.value = currentDay;
+                    try { dayInput.showPicker(); } catch (err) { dayInput.focus(); }
+                }
+            }
+            currentRange = next;
             document.getElementById("rep-ranges").querySelectorAll(".chip").forEach(function (c) {
                 c.classList.toggle("active", c === btn);
             });
             render();
         });
     });
+
+    var dayPicker = document.getElementById("rep-day");
+    if (dayPicker) {
+        dayPicker.addEventListener("change", function () {
+            if (!dayPicker.value) return;
+            currentDay = dayPicker.value;
+            currentRange = "day";
+            document.getElementById("rep-ranges").querySelectorAll(".chip").forEach(function (c) {
+                c.classList.toggle("active", c.getAttribute("data-range") === "day");
+            });
+            render();
+        });
+    }
 
     // --- Export the report on screen to a CSV file ---
     var exportBtn = document.getElementById("rep-export-btn");
@@ -1106,14 +1141,15 @@
 
             // --- Section 10: the transactions ---
             lines.push(["Transactions"].map(csvCell).join(","));
-            lines.push(["Sale No.", "Date", "Cashier", "Items", "Gross", "Discount %", "Discount", "Net"].map(csvCell).join(","));
+            lines.push(["Sale No.", "Date", "Cashier", "Items", "Quantity", "Gross", "Discount %", "Discount", "Net"].map(csvCell).join(","));
             if (stats.sales.length) {
                 stats.sales.forEach(function (sale) {
                     lines.push([
                         csvCell(sale.txNo),
                         csvCell(sale.date),
                         csvCell(sale.cashier),
-                        sale.units,
+                        csvCell(itemsLabel(sale)),
+                        Number(sale.units) || 0,
                         money(sale.gross),
                         Api.round2(Number(sale.discountPct) || 0).toFixed(2),
                         money(sale.discount),
@@ -1121,7 +1157,7 @@
                     ].join(","));
                 });
             } else {
-                lines.push(["-", "", "", "", "No transactions in this period.", "", ""].join(","));
+                lines.push(["-", "", "", "", "", "No transactions in this period.", "", "", ""].join(","));
             }
 
             // The BOM keeps Excel from mangling accented characters.
@@ -1129,12 +1165,21 @@
             var url = URL.createObjectURL(blob);
             var link = document.createElement("a");
             link.href = url;
-            link.download = "sales-report-" + currentRange + "-" + new Date().toISOString().slice(0, 10) + ".csv";
+            link.download = "sales-report-" +
+                (currentRange === "day" && currentDay ? "day-" + currentDay : currentRange) + "-" +
+                new Date().toISOString().slice(0, 10) + ".csv";
             document.body.appendChild(link);
             link.click();
             URL.revokeObjectURL(url);
 
-            flash("Exported " + stats.sales.length + " transaction(s) for " + RANGE_TEXT[currentRange].toLowerCase() + ".");
+            flash("Exported " + stats.sales.length + " transaction(s) for " + dayPhrase() + ".");
+        });
+    }
+
+    var printBtn = document.getElementById("rep-print-btn");
+    if (printBtn) {
+        printBtn.addEventListener("click", function () {
+            window.print();
         });
     }
 
