@@ -1306,4 +1306,5 @@ body {
 .inv-toolbar .password-field {
     flex: 1 1 260px;
     margin-left: 0;
+    max-width: 300px;
 }
