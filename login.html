@@ -23,10 +23,6 @@
             
             <p id="login-error" class="login-error" style="display:none;">Incorrect username or password.</p>
             
-            <div class="checkbox-and-label">
-                <input type="checkbox" id="show-password" class="checkbox" />
-                <label for="show-password" class="show-password">Show Password</label>
-            </div>
 <button type="submit" class="button">Log In</button>
 
             <p class="text-link"><a href="setup.html" id="setup-link" class="don-t-have-an-account" style="display:none;">First time here? Create the admin account</a></p>
@@ -35,6 +31,7 @@
     </div>
 
     <script src="assets/js/api.js"></script>
+    <script src="assets/js/password-toggle.js"></script>
     <script>
         // Show the setup link only while the database has no accounts yet.
         Api.setupAvailable().then(function (available) {
@@ -43,11 +40,6 @@
             }
         }).catch(function () {
             // API not reachable: keep the link hidden
-        });
-
-        document.getElementById("show-password").addEventListener("change", function () {
-            var password = document.getElementById("password");
-            password.type = this.checked ? "text" : "password";
         });
 
         document.querySelector(".form-log-in").addEventListener("submit", async function (e) {

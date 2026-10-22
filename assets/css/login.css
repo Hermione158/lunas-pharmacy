@@ -121,3 +121,28 @@ body {
   font-weight: 600;
   text-align: center;
 }
+/* Password show/hide toggle */
+.password-field {
+    position: relative;
+    display: block;
+    width: 100%;
+}
+.password-field input {
+    width: 100%;
+    padding-right: 42px;
+}
+.password-toggle {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    font-size: 16px;
+    line-height: 1;
+    opacity: 0.6;
+    padding: 4px;
+}
+.password-toggle:hover { opacity: 1; }
+.password-toggle.is-visible { opacity: 1; }
