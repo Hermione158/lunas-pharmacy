@@ -24,6 +24,7 @@
     var totalEl = document.getElementById("total");
     var discountInput = document.getElementById("discount-input");
     var discountType = document.getElementById("discount-type");
+    var discountBlocked = false;
     var discountAmountEl = document.getElementById("discount-amount");
     var searchInput = document.getElementById("search-input");
     var scanInput = document.getElementById("scan-input");
@@ -377,6 +378,11 @@
     async function completeSale() {
         // One sale at a time: a second Enter must never send a second sale.
         if (saving) return;
+        if (discountBlocked) {
+            var msg = document.getElementById("discount-limit");
+            if (msg) msg.hidden = false;
+            return;
+        }
 
         var received = receivedAmount();
         if (!(received >= paymentDue) || paymentDue <= 0) {
@@ -428,6 +434,11 @@
     }
 
     document.getElementById("checkout-btn").addEventListener("click", async function () {
+        if (discountBlocked) {
+            var msg = document.getElementById("discount-limit");
+            if (msg) { msg.hidden = false; }
+            return;
+        }
         var keys = Object.keys(cart);
         if (keys.length === 0) {
             alert("The sale is empty. Add a product first.");
@@ -536,16 +547,26 @@
 
     discountInput.addEventListener("input", function () {
         var limitMsg = document.getElementById("discount-limit");
+        var checkoutBtn = document.getElementById("checkout-btn");
         var value = Number(discountInput.value) || 0;
         if (value > 20) {
             discountInput.value = "20";
+            discountBlocked = true;
+            if (checkoutBtn) checkoutBtn.disabled = true;
             if (limitMsg) {
                 limitMsg.hidden = false;
                 clearTimeout(limitMsg._t);
-                limitMsg._t = setTimeout(function () { limitMsg.hidden = true; }, 2500);
+                limitMsg._t = setTimeout(function () {
+                    limitMsg.hidden = true;
+                    discountBlocked = false;
+                    if (checkoutBtn) checkoutBtn.disabled = false;
+                }, 2500);
             }
-        } else if (limitMsg) {
-            limitMsg.hidden = true;
+        } else {
+            discountBlocked = false;
+            if (limitMsg) limitMsg.hidden = true;
+            var checkoutBtn2 = document.getElementById("checkout-btn");
+            if (checkoutBtn2) checkoutBtn2.disabled = false;
         }
         renderCart();
     });
@@ -555,11 +576,13 @@
             if (discountType.value === "senior" || discountType.value === "pwd") {
                 discountInput.value = "20";
                 discountInput.disabled = true;
+                discountBlocked = false;
+                var limitMsg2 = document.getElementById("discount-limit");
+                if (limitMsg2) limitMsg2.hidden = true;
+                var checkoutBtn3 = document.getElementById("checkout-btn");
+                if (checkoutBtn3) checkoutBtn3.disabled = false;
             } else {
                 discountInput.disabled = false;
-                if (discountInput.value === "20" && (discountType.value === "none")) {
-                    // leave value; cashier can adjust
-                }
             }
             renderCart();
         });
