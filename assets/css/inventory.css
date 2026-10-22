@@ -1280,11 +1280,11 @@ body {
 .password-field {
     position: relative;
     display: block;
-    width: 100%;
+    width: 80%;
 }
 .password-field input {
-    width: 80%;
-    padding-right: 25px;
+    width: 100%;
+    padding-right: 5px;
 }
 .password-toggle {
     position: absolute;
