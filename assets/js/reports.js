@@ -374,13 +374,15 @@
             var y = padT + innerH - h;
             var cls = net > 0 ? "bar" : "bar-zero";
             var label = bucketLabel(b.bucket, grain);
+            var gross = Number(b.gross) || 0;
             var tip = label + " · Net " + currency(net) +
-                " · Gross " + currency(b.gross) + " · " + b.transactions + " transaction(s)";
+                " · Gross " + currency(gross) + " · " + b.transactions + " transaction(s)";
             parts.push('<rect class="' + cls + '" data-label="' + esc(label) + '" data-net="' + net +
-                '" data-tx="' + (Number(b.transactions) || 0) + '" x="' + x.toFixed(1) + '" y="' +
+                '" data-gross="' + gross + '" data-tx="' + (Number(b.transactions) || 0) +
+                '" aria-label="' + esc(tip) + '" x="' + x.toFixed(1) + '" y="' +
                 (net > 0 ? y.toFixed(1) : (padT + innerH - 2).toFixed(1)) +
                 '" width="' + barW.toFixed(1) + '" height="' + (net > 0 ? h.toFixed(1) : 2) +
-                '" rx="3"><title>' + esc(tip) + "</title></rect>");
+                '" rx="3"></rect>');
             if (i % labelEvery === 0) {
                 parts.push('<text class="axis-label" x="' + (x + barW / 2).toFixed(1) + '" y="' + (H - padB + 20) +
                     '" text-anchor="middle">' + esc(label) + "</text>");
@@ -456,8 +458,8 @@
                 '" cx="100" cy="100" r="' + radius + '" fill="none" stroke="' +
                 CHART_COLORS[i % CHART_COLORS.length] + '" stroke-width="' + thickness +
                 '" stroke-dasharray="' + length.toFixed(2) + " " + (circle - length).toFixed(2) +
-                '" stroke-dashoffset="' + (-offset).toFixed(2) + '" transform="rotate(-90 100 100)"><title>' +
-                esc(slice.category + " · " + currency(slice.revenue)) + "</title></circle>");
+                '" stroke-dashoffset="' + (-offset).toFixed(2) + '" transform="rotate(-90 100 100)" aria-label="' +
+                esc(slice.category + " · " + currency(slice.revenue)) + '"></circle>');
             offset += length;
         });
 
@@ -521,8 +523,11 @@
 
         var label = (rect.getAttribute("data-label") || "").trim();
         var net = Number(rect.getAttribute("data-net")) || 0;
+        var gross = Number(rect.getAttribute("data-gross")) || 0;
         var sales = Number(rect.getAttribute("data-tx")) || 0;
-        var value = label + " · " + currency(net) + " · " + sales + " sale" + (sales === 1 ? "" : "s");
+        var value = label + " · " + currency(net) +
+            (gross > 0 ? " · gross " + currency(gross) : "") +
+            " · " + sales + " sale" + (sales === 1 ? "" : "s");
 
         var g = document.createElementNS(SVG_NS, "g");
         g.setAttribute("class", "mini-tip");
@@ -670,9 +675,9 @@
             var cls = i === best ? "mini-bar best" : net > 0 ? "mini-bar" : "mini-bar zero";
             var tip = b.label + " · " + currency(net) + " · " + b.transactions + " transaction(s)";
             parts.push('<rect class="' + cls + '" data-label="' + esc(b.label) + '" data-net="' + net +
-                '" data-tx="' + (Number(b.transactions) || 0) + '" x="' + x.toFixed(1) + '" y="' +
+                '" data-tx="' + (Number(b.transactions) || 0) + '" aria-label="' + esc(tip) + '" x="' + x.toFixed(1) + '" y="' +
                 (net > 0 ? y.toFixed(1) : (padT + innerH - 2).toFixed(1)) + '" width="' + barW.toFixed(1) +
-                '" height="' + (net > 0 ? h.toFixed(1) : 2) + '" rx="2"><title>' + esc(tip) + "</title></rect>");
+                '" height="' + (net > 0 ? h.toFixed(1) : 2) + '" rx="2"></rect>');
             if (i % labelEvery === 0) {
                 parts.push('<text class="axis-label" x="' + (x + barW / 2).toFixed(1) + '" y="' + (H - 6) +
                     '" text-anchor="middle">' + esc(b.label) + "</text>");
