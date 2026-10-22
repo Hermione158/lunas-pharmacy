@@ -767,9 +767,9 @@ body {
 }
 
 .inv-input.barcode-input {
-    max-width: 170px;
+    max-width: 220px;
     font-family: Consolas, "Courier New", monospace;
-    font-size: 13px;
+    font-size: 14px;
 }
 
 /* Saved items keep their name: shown as text, aligned with the inputs. */
@@ -1322,4 +1322,10 @@ body {
 #accounts-list #add-user {
     flex-shrink: 0;
     white-space: nowrap;
+}
+
+/* Make barcode and category fields easier to read in Update Inventory */
+.inv-table .inv-input {
+    font-size: 14px;
+    min-height: 36px;
 }
