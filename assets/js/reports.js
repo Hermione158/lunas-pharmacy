@@ -306,6 +306,18 @@
         return mult * pow;
     }
 
+    // Hours of the day in the shop's own wording: "5p" on the axis, "5:00 PM"
+    // in a sentence.
+    function hour12Label(h) {
+        var n = h % 12;
+        return (n === 0 ? 12 : n) + (h < 12 ? "a" : "p");
+    }
+
+    function hour12Full(h) {
+        var n = h % 12;
+        return (n === 0 ? 12 : n) + ":00 " + (h < 12 ? "AM" : "PM");
+    }
+
     // --- The bar chart: net sales over time ---
     function renderSeriesChart(stats) {
         var wrap = document.getElementById("rep-chart");
@@ -361,13 +373,17 @@
             var x = padL + slot * i + (slot - barW) / 2;
             var y = padT + innerH - h;
             var cls = net > 0 ? "bar" : "bar-zero";
-            var tip = bucketLabel(b.bucket, grain) + " · Net " + currency(net) +
+            var label = bucketLabel(b.bucket, grain);
+            var tip = label + " · Net " + currency(net) +
                 " · Gross " + currency(b.gross) + " · " + b.transactions + " transaction(s)";
-            parts.push('<rect class="' + cls + '" x="' + x.toFixed(1) + '" y="' + (net > 0 ? y.toFixed(1) : (padT + innerH - 2).toFixed(1)) +
-                '" width="' + barW.toFixed(1) + '" height="' + (net > 0 ? h.toFixed(1) : 2) + '" rx="3"><title>' + esc(tip) + "</title></rect>");
+            parts.push('<rect class="' + cls + '" data-label="' + esc(label) + '" data-net="' + net +
+                '" data-tx="' + (Number(b.transactions) || 0) + '" x="' + x.toFixed(1) + '" y="' +
+                (net > 0 ? y.toFixed(1) : (padT + innerH - 2).toFixed(1)) +
+                '" width="' + barW.toFixed(1) + '" height="' + (net > 0 ? h.toFixed(1) : 2) +
+                '" rx="3"><title>' + esc(tip) + "</title></rect>");
             if (i % labelEvery === 0) {
                 parts.push('<text class="axis-label" x="' + (x + barW / 2).toFixed(1) + '" y="' + (H - padB + 20) +
-                    '" text-anchor="middle">' + esc(bucketLabel(b.bucket, grain)) + "</text>");
+                    '" text-anchor="middle">' + esc(label) + "</text>");
             }
         });
 
@@ -432,8 +448,12 @@
         parts.push('<circle cx="100" cy="100" r="' + radius + '" fill="none" stroke="#f3e2e8" stroke-width="' + thickness + '"></circle>');
 
         slices.forEach(function (slice, i) {
-            var length = total > 0 ? (Number(slice.revenue) / total) * circle : 0;
-            parts.push('<circle cx="100" cy="100" r="' + radius + '" fill="none" stroke="' +
+            var revenue = Number(slice.revenue) || 0;
+            var pct = total > 0 ? (revenue / total) * 100 : 0;
+            var length = total > 0 ? (revenue / total) * circle : 0;
+            parts.push('<circle class="rep-slice" data-i="' + i + '" data-name="' + esc(slice.category) +
+                '" data-revenue="' + revenue + '" data-pct="' + pct.toFixed(1) +
+                '" cx="100" cy="100" r="' + radius + '" fill="none" stroke="' +
                 CHART_COLORS[i % CHART_COLORS.length] + '" stroke-width="' + thickness +
                 '" stroke-dasharray="' + length.toFixed(2) + " " + (circle - length).toFixed(2) +
                 '" stroke-dashoffset="' + (-offset).toFixed(2) + '" transform="rotate(-90 100 100)"><title>' +
@@ -441,14 +461,14 @@
             offset += length;
         });
 
-        parts.push('<text class="pie-label" x="100" y="94" text-anchor="middle">Net sales</text>');
-        parts.push('<text class="pie-total" x="100" y="118" text-anchor="middle">' + esc(currency(total)) + "</text>");
+        parts.push('<text class="pie-label" id="rep-pie-center-label" x="100" y="94" text-anchor="middle">Net sales</text>');
+        parts.push('<text class="pie-total" id="rep-pie-center-total" x="100" y="118" text-anchor="middle">' + esc(currency(total)) + "</text>");
         parts.push("</svg>");
 
         var legend = '<ul class="rep-pie-legend">';
         slices.forEach(function (slice, i) {
             var pct = total > 0 ? (Number(slice.revenue) / total) * 100 : 0;
-            legend += "<li>" +
+            legend += '<li data-i="' + i + '">' +
                 '<span class="rep-pie-dot" style="background:' + CHART_COLORS[i % CHART_COLORS.length] + '"></span>' +
                 '<span class="rep-pie-name">' + esc(slice.category) + "</span>" +
                 '<span class="rep-pie-value">' + esc(currency(slice.revenue)) + "</span>" +
@@ -457,6 +477,7 @@
         });
         legend += "</ul>";
 
+        wrap.setAttribute("data-total", currency(total));
         wrap.innerHTML = parts.join("") + legend;
 
         if (insight) {
@@ -465,6 +486,161 @@
             insight.textContent = "Biggest share: " + first.category + " at " + firstPct.toFixed(1) + "% of " + currency(total);
         }
     }
+
+    // --- Hovering the charts: a bubble on the bars, a spotlight on the slices ---
+    // One listener for the whole page: the charts are redrawn on every range
+    // change, so binding to the drawings themselves would pile up handlers.
+    var SVG_NS = "http://www.w3.org/2000/svg";
+
+    function svgSize(svg) {
+        var box = (svg.getAttribute("viewBox") || "0 0 320 116").split(/[\s,]+/);
+        return { w: Number(box[2]) || 320, h: Number(box[3]) || 116 };
+    }
+
+    function clearBarTip(svg) {
+        if (!svg) return;
+        svg.classList.remove("spot");
+        var hot = svg.querySelector("rect[data-label].hot");
+        if (hot) hot.classList.remove("hot");
+        var tip = svg.querySelector(".mini-tip");
+        if (tip) tip.remove();
+    }
+
+    function showBarTip(rect) {
+        var svg = rect.closest("svg");
+        if (!svg) return;
+        clearBarTip(svg);
+
+        rect.classList.add("hot");
+        svg.classList.add("spot");
+
+        var size = svgSize(svg);
+        var x = Number(rect.getAttribute("x")) || 0;
+        var y = Number(rect.getAttribute("y")) || 0;
+        var w = Number(rect.getAttribute("width")) || 0;
+
+        var label = (rect.getAttribute("data-label") || "").trim();
+        var net = Number(rect.getAttribute("data-net")) || 0;
+        var sales = Number(rect.getAttribute("data-tx")) || 0;
+        var value = label + " · " + currency(net) + " · " + sales + " sale" + (sales === 1 ? "" : "s");
+
+        var g = document.createElementNS(SVG_NS, "g");
+        g.setAttribute("class", "mini-tip");
+        g.setAttribute("pointer-events", "none");
+
+        var bg = document.createElementNS(SVG_NS, "rect");
+        bg.setAttribute("class", "mini-tip-bg");
+        bg.setAttribute("rx", "5");
+        bg.setAttribute("height", "20");
+
+        var text = document.createElementNS(SVG_NS, "text");
+        text.setAttribute("class", "mini-tip-text");
+        text.setAttribute("text-anchor", "middle");
+        text.textContent = value;
+
+        g.appendChild(bg);
+        g.appendChild(text);
+        svg.appendChild(g);
+
+        // The browser knows the text's real width; the fallback keeps the
+        // chart readable in environments that cannot measure SVG text.
+        var textW = 0;
+        try { textW = text.getComputedTextLength(); } catch (err) { textW = 0; }
+        if (!(textW > 0)) textW = value.length * 6.2;
+
+        var bubbleW = textW + 16;
+        var bubbleX = Math.max(3, Math.min(size.w - bubbleW - 3, x + w / 2 - bubbleW / 2));
+        var bubbleY = Math.max(2, Math.min(size.h - 22, y - 26));
+
+        bg.setAttribute("x", bubbleX.toFixed(1));
+        bg.setAttribute("y", bubbleY.toFixed(1));
+        bg.setAttribute("width", bubbleW.toFixed(1));
+        text.setAttribute("x", (bubbleX + bubbleW / 2).toFixed(1));
+        text.setAttribute("y", (bubbleY + 14).toFixed(1));
+    }
+
+    function clearPie(wrap) {
+        if (!wrap) return;
+        var svg = wrap.querySelector("svg");
+        if (svg) svg.classList.remove("spot");
+        wrap.querySelectorAll("circle.rep-slice").forEach(function (slice) { slice.classList.remove("hot"); });
+
+        var legend = wrap.querySelector(".rep-pie-legend");
+        if (legend) {
+            legend.classList.remove("spot");
+            legend.querySelectorAll("li").forEach(function (li) { li.classList.remove("hot"); });
+        }
+
+        var label = document.getElementById("rep-pie-center-label");
+        var total = document.getElementById("rep-pie-center-total");
+        if (label) label.textContent = "Net sales";
+        if (total) total.textContent = wrap.getAttribute("data-total") || total.textContent;
+    }
+
+    function highlightPie(wrap, index) {
+        if (!wrap) return;
+        clearPie(wrap);
+
+        var slice = wrap.querySelector('circle.rep-slice[data-i="' + index + '"]');
+        if (!slice) return;
+
+        var svg = wrap.querySelector("svg");
+        if (svg) svg.classList.add("spot");
+        wrap.querySelectorAll("circle.rep-slice").forEach(function (other) {
+            other.classList.toggle("hot", other === slice);
+        });
+
+        var legend = wrap.querySelector(".rep-pie-legend");
+        if (legend) {
+            legend.classList.add("spot");
+            legend.querySelectorAll("li").forEach(function (li) {
+                li.classList.toggle("hot", li.getAttribute("data-i") === index);
+            });
+        }
+
+        var name = slice.getAttribute("data-name") || "";
+        var revenue = Number(slice.getAttribute("data-revenue")) || 0;
+        var pct = Number(slice.getAttribute("data-pct")) || 0;
+        var label = document.getElementById("rep-pie-center-label");
+        var total = document.getElementById("rep-pie-center-total");
+        if (label) label.textContent = name.length > 16 ? name.slice(0, 15) + "…" : name;
+        if (total) total.textContent = currency(revenue) + " · " + pct.toFixed(1) + "%";
+    }
+
+    document.addEventListener("mouseover", function (e) {
+        var target = e.target;
+        if (!target || !target.closest) return;
+
+        var rect = target.closest("svg rect[data-label]");
+        if (rect) { showBarTip(rect); return; }
+
+        var slice = target.closest("#rep-pie circle.rep-slice");
+        var legendRow = target.closest("#rep-pie .rep-pie-legend li[data-i]");
+        if (slice || legendRow) {
+            highlightPie(target.closest("#rep-pie"), slice ? slice.getAttribute("data-i") : legendRow.getAttribute("data-i"));
+        }
+    });
+
+    document.addEventListener("mouseout", function (e) {
+        var target = e.target;
+        if (!target || !target.closest) return;
+
+        var rect = target.closest("svg rect[data-label]");
+        if (rect) {
+            var svg = rect.closest("svg");
+            var to = e.relatedTarget;
+            if (to && to.closest && to.closest("svg rect[data-label]") && to.closest("svg") === svg) return;
+            clearBarTip(svg);
+            return;
+        }
+
+        var inPie = target.closest("#rep-pie circle.rep-slice, #rep-pie .rep-pie-legend li[data-i]");
+        if (!inPie) return;
+
+        var next = e.relatedTarget;
+        if (next && next.closest && next.closest("#rep-pie circle.rep-slice, #rep-pie .rep-pie-legend li[data-i]")) return;
+        clearPie(target.closest("#rep-pie"));
+    });
 
     // A small bar chart: many bars, little space, just enough to see the shape.
     function renderMiniBars(el, buckets, options) {
@@ -493,7 +669,8 @@
             var y = padT + innerH - h;
             var cls = i === best ? "mini-bar best" : net > 0 ? "mini-bar" : "mini-bar zero";
             var tip = b.label + " · " + currency(net) + " · " + b.transactions + " transaction(s)";
-            parts.push('<rect class="' + cls + '" x="' + x.toFixed(1) + '" y="' +
+            parts.push('<rect class="' + cls + '" data-label="' + esc(b.label) + '" data-net="' + net +
+                '" data-tx="' + (Number(b.transactions) || 0) + '" x="' + x.toFixed(1) + '" y="' +
                 (net > 0 ? y.toFixed(1) : (padT + innerH - 2).toFixed(1)) + '" width="' + barW.toFixed(1) +
                 '" height="' + (net > 0 ? h.toFixed(1) : 2) + '" rx="2"><title>' + esc(tip) + "</title></rect>");
             if (i % labelEvery === 0) {
@@ -501,6 +678,9 @@
                     '" text-anchor="middle">' + esc(b.label) + "</text>");
             }
         });
+
+        parts.push('<line class="mini-baseline" x1="2" y1="' + (padT + innerH) +
+            '" x2="' + (W - 2) + '" y2="' + (padT + innerH) + '"></line>');
 
         el.innerHTML = '<svg viewBox="0 0 ' + W + " " + H + '" role="img" aria-label="' + esc(opts.aria || "Sales") + '">' +
             parts.join("") + "</svg>";
@@ -540,7 +720,9 @@
             var key = String(h);
             var found = hourLookup[key] || { bucket: key, net: 0, transactions: 0 };
             hours.push({
-                label: (h < 10 ? "0" : "") + h,
+                hour: h,
+                label: hour12Label(h),
+                full: hour12Full(h),
                 net: Number(found.net) || 0,
                 transactions: Number(found.transactions) || 0
             });
@@ -566,7 +748,8 @@
         var bestHour = hours.reduce(function (a, b) { return Number(b.net) > Number(a.net) ? b : a; }, hours[0]);
         var bestDay = days.reduce(function (a, b) { return Number(b.net) > Number(a.net) ? b : a; }, days[0]);
         if (insight) {
-            insight.textContent = "Rush hour: " + bestHour.label + ":00 · Biggest day: " + bestDay.full;
+            insight.innerHTML = "Rush hour: <strong>" + esc(bestHour.full) + "</strong> · Biggest day: <strong>" +
+                esc(bestDay.full) + "</strong>";
         }
     }
 

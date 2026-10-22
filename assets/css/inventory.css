@@ -404,6 +404,15 @@ body {
     font-size: 13px;
     color: #2a2230;
     border-bottom: 1px solid #f3e2e8;
+    transition: opacity 0.15s ease;
+}
+
+.rep-pie-legend.spot li:not(.hot) {
+    opacity: 0.45;
+}
+
+.rep-pie-legend li.hot .rep-pie-name {
+    font-weight: 700;
 }
 
 .rep-pie-legend li:last-child {
@@ -478,10 +487,12 @@ body {
 }
 
 .rep-mini-title {
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 700;
-    color: #4a3550;
-    margin-bottom: 6px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #6d5a75;
+    margin-bottom: 8px;
 }
 
 .rep-mini-chart svg {
@@ -490,20 +501,74 @@ body {
     display: block;
 }
 
-.rep-chart .mini-bar {
+.rep-chart .mini-bar, .rep-mini-chart .mini-bar {
     fill: #b79ad4;
 }
 
-.rep-chart .mini-bar.best {
+.rep-chart .mini-bar.best, .rep-mini-chart .mini-bar.best {
     fill: #382449;
 }
 
-.rep-chart .mini-bar.zero {
+.rep-chart .mini-bar.zero, .rep-mini-chart .mini-bar.zero {
     fill: #eadff2;
 }
 
-.rep-chart .mini-bar:hover {
+.rep-chart .mini-bar:hover, .rep-mini-chart .mini-bar:hover {
     fill: #7b4fa6;
+}
+
+.rep-mini-chart .axis-label {
+    font-size: 11px;
+    fill: #6d5a75;
+}
+
+.rep-mini-baseline {
+    stroke: #f0e4ec;
+    stroke-width: 1;
+}
+
+/* Hovering one bar dims its neighbours and lights the bar itself */
+.rep-chart svg.spot rect.bar:not(.hot),
+.rep-chart svg.spot rect.bar-zero:not(.hot),
+.rep-mini-chart svg.spot rect.mini-bar:not(.hot) {
+    opacity: 0.4;
+}
+
+.rep-chart svg.spot rect.bar,
+.rep-chart svg.spot rect.bar-zero,
+.rep-mini-chart svg.spot rect.mini-bar {
+    transition: opacity 0.15s ease;
+}
+
+.rep-chart rect.bar.hot,
+.rep-chart rect.bar-zero.hot,
+.rep-mini-chart rect.mini-bar.hot {
+    stroke: #382449;
+    stroke-width: 1.5;
+}
+
+/* The value bubble that follows the hovered bar */
+.mini-tip-bg {
+    fill: #382449;
+}
+
+.mini-tip-text {
+    fill: #ffffff;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+/* Hovering a category lights its slice and fills the middle of the ring */
+#rep-pie svg circle.rep-slice {
+    transition: opacity 0.15s ease, stroke-width 0.15s ease;
+}
+
+#rep-pie svg.spot circle.rep-slice:not(.hot) {
+    opacity: 0.35;
+}
+
+#rep-pie svg circle.rep-slice.hot {
+    stroke-width: 38;
 }
 
 @media (max-width: 980px) {
