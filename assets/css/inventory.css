@@ -826,7 +826,8 @@ body {
 .inv-price-box .inv-input {
     width: auto;
     flex: 1 1 auto;
-    min-width: 64px;
+    min-width: 56px;
+    font-size: 13px;
 }
 
 /* Stock field: as roomy as the price box, with counts centered. */
@@ -834,14 +835,15 @@ body {
     display: flex;
     align-items: center;
     width: 100%;
-    max-width: 110px;
+    max-width: 90px;
 }
 
 .inv-stock-box .inv-input {
-    min-width: 96px;
+    min-width: 72px;
     text-align: center;
     padding-left: 10px;
     padding-right: 10px;
+    font-size: 13px;
 }
 
 /* Row actions */
