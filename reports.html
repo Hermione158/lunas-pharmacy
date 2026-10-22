@@ -116,21 +116,24 @@
         <div class="inv-table-wrap">
             <h3 class="rep-heading">Dead Stock</h3>
             <p class="rep-chart-sub" id="rep-dead-note">Items that did not sell in this period.</p>
-            <div class="rep-search-row">
-                <input type="text" class="inv-search" data-filter-table="rep-dead-table" placeholder="Search item or category..." aria-label="Search dead stock" />
+            <button type="button" id="rep-dead-toggle" class="btn btn-soft rep-dead-toggle" aria-expanded="false" aria-controls="rep-dead-body" style="display:none;">Show list</button>
+            <div id="rep-dead-body" hidden>
+                <div class="rep-search-row">
+                    <input type="text" class="inv-search" data-filter-table="rep-dead-table" placeholder="Search item or category..." aria-label="Search dead stock" />
+                </div>
+                <table class="inv-table" id="rep-dead-table">
+                    <thead>
+                        <tr>
+                            <th>Item</th>
+                            <th>Category</th>
+                            <th>Stock</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+                <p id="rep-dead-empty" class="no-results" style="display:none;">Nothing is gathering dust.</p>
+                <p id="rep-dead-filter-empty" class="no-results" style="display:none;">No dead stock matches your search.</p>
             </div>
-            <table class="inv-table" id="rep-dead-table">
-                <thead>
-                    <tr>
-                        <th>Item</th>
-                        <th>Category</th>
-                        <th>Stock</th>
-                    </tr>
-                </thead>
-                <tbody></tbody>
-            </table>
-            <p id="rep-dead-empty" class="no-results" style="display:none;">Nothing is gathering dust.</p>
-            <p id="rep-dead-filter-empty" class="no-results" style="display:none;">No dead stock matches your search.</p>
         </div>
 
         <div class="inv-table-wrap">

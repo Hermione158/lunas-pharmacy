@@ -571,6 +571,23 @@
     }
 
     // --- The items that did not move ---
+    // The list takes room, so the card stays a one-line summary until the
+    // admin asks for it. The choice survives a change of period.
+    var deadCollapsed = true;
+    var deadCount = 0;
+
+    function syncDeadCollapse() {
+        var body = document.getElementById("rep-dead-body");
+        var toggle = document.getElementById("rep-dead-toggle");
+        if (body) body.hidden = deadCollapsed || !deadCount;
+        if (toggle) {
+            var hasList = deadCount > 0;
+            toggle.style.display = hasList ? "" : "none";
+            toggle.textContent = deadCollapsed ? "Show list" : "Hide list";
+            toggle.setAttribute("aria-expanded", deadCollapsed ? "false" : "true");
+        }
+    }
+
     function renderDeadStock(stats) {
         var tbody = document.querySelector("#rep-dead-table tbody");
         var empty = document.getElementById("rep-dead-empty");
@@ -595,6 +612,9 @@
                   (total > dead.length ? " (showing " + dead.length + ")" : "")
                 : "Everything sold in this period.";
         }
+
+        deadCount = total;
+        syncDeadCollapse();
     }
 
     // --- What will run out, and when ---
@@ -727,6 +747,14 @@
     document.querySelectorAll("input[data-filter-table]").forEach(function (input) {
         input.addEventListener("input", applyTableFilters);
     });
+
+    var deadToggle = document.getElementById("rep-dead-toggle");
+    if (deadToggle) {
+        deadToggle.addEventListener("click", function () {
+            deadCollapsed = !deadCollapsed;
+            syncDeadCollapse();
+        });
+    }
 
     document.getElementById("rep-ranges").querySelectorAll(".chip").forEach(function (btn) {
         btn.addEventListener("click", function () {
