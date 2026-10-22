@@ -1313,3 +1313,13 @@ body {
     flex: 1 1 200px;
     max-width: 280px;
 }
+
+/* Move the role dropdown and Add Account button to the right side of the toolbar */
+#accounts-list #new-role {
+    margin-left: auto;
+    max-width: 160px;
+}
+#accounts-list #add-user {
+    flex-shrink: 0;
+    white-space: nowrap;
+}
