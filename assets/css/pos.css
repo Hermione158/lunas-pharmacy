@@ -1278,3 +1278,10 @@ body {
         color: #1e1e1e;
     }
 }
+
+.discount-limit {
+    margin: 0;
+    font-size: 12px;
+    font-weight: 700;
+    color: #b00020;
+}

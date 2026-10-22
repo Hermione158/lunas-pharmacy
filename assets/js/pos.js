@@ -534,7 +534,21 @@
         window.location.href = "login.html";
     });
 
-    discountInput.addEventListener("input", function () { renderCart(); });
+    discountInput.addEventListener("input", function () {
+        var limitMsg = document.getElementById("discount-limit");
+        var value = Number(discountInput.value) || 0;
+        if (value > 20) {
+            discountInput.value = "20";
+            if (limitMsg) {
+                limitMsg.hidden = false;
+                clearTimeout(limitMsg._t);
+                limitMsg._t = setTimeout(function () { limitMsg.hidden = true; }, 2500);
+            }
+        } else if (limitMsg) {
+            limitMsg.hidden = true;
+        }
+        renderCart();
+    });
 
     if (discountType) {
         discountType.addEventListener("change", function () {
