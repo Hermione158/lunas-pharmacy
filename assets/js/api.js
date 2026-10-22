@@ -120,9 +120,6 @@
         updateProduct: function (id, patch) {
             return request("/api/products/" + id, { method: "PUT", body: patch });
         },
-        deleteProduct: function (id) {
-            return request("/api/products/" + id, { method: "DELETE" });
-        },
         saveProducts: function (items) {
             return request("/api/products/bulk", { method: "POST", body: { items: items } });
         },

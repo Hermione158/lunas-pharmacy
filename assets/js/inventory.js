@@ -211,8 +211,7 @@
                     '<button type="button" class="icon-btn icon-save">Save</button>' +
                     (archived
                         ? '<button type="button" class="icon-btn icon-restore">Restore</button>'
-                        : '<button type="button" class="icon-btn icon-del">Delete</button>' +
-                          '<button type="button" class="icon-btn icon-archive">Archive</button>') +
+                        : '<button type="button" class="icon-btn icon-archive">Archive</button>') +
                     "</div></td></tr>";
             }).join("");
         } else {
@@ -554,24 +553,6 @@
                 } catch (err) {
                     if (!handleAuthError(err)) alert(err.message);
                 }
-            } else if (btn.classList.contains("icon-del")) {
-                var id = Number(row.getAttribute("data-id"));
-                if (!id) return;
-                var name = row.getAttribute("data-name") || readRow(row).name;
-                var goAhead = await showConfirm({
-                    title: "Remove this item?",
-                    message: "Remove \"" + name + "\" from the inventory? This cannot be undone.",
-                    confirmText: "Yes, Remove"
-                });
-                if (!goAhead) return;
-
-                try {
-                    await Api.deleteProduct(id);
-                    await reload();
-                    flash("\"" + name + "\" removed.");
-                } catch (err) {
-                    if (!handleAuthError(err)) alert(err.message);
-                }
             }
         });
     }
@@ -663,7 +644,6 @@
                 '<td><span class="badge badge-in">In stock</span></td>' +
                 '<td><div class="row-actions">' +
                 '<button type="button" class="icon-btn icon-save">Save</button>' +
-                '<button type="button" class="icon-btn icon-del">Delete</button>' +
                 "</div></td>";
             tbody.insertBefore(row, tbody.firstChild);
             row.querySelector('[data-field="n"]').focus();
