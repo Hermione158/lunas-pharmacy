@@ -177,6 +177,9 @@
         },
         archiveUser: function (id, status) {
             return request("/api/users/" + id, { method: "PUT", body: { status: status } });
+        },
+        updateUser: function (id, patch) {
+            return request("/api/users/" + id, { method: "PUT", body: patch });
         }
     };
 

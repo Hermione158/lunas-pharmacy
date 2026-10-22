@@ -32,6 +32,7 @@
     var chipsBox = document.getElementById("inv-chips");
     var activeCat = "All";
     var statusFilter = "active";
+    var stockFilter = "all";
 
     // Pictures attached to a new row, kept next to the row until it is saved.
     var rowImages = new WeakMap();
@@ -282,8 +283,16 @@
                 text += " " + (input.value || "").toLowerCase();
             });
             var cat = row.getAttribute("data-cat") || "";
+            var id = Number(row.getAttribute("data-id")) || 0;
+            var product = null;
+            products.forEach(function (p) { if (p.id === id) product = p; });
+            var stock = product ? Number(product.stock) : 0;
+            var showStock = stockFilter === "all" ||
+                (stockFilter === "low" && stock > 0 && stock < Api.LOW_STOCK) ||
+                (stockFilter === "out" && stock <= 0);
             var show = (!term || text.indexOf(term) !== -1) &&
-                (activeCat === "All" || cat === activeCat);
+                (activeCat === "All" || cat === activeCat) &&
+                showStock;
             row.style.display = show ? "" : "none";
             if (show) visible++;
         });
@@ -309,6 +318,20 @@
                 });
                 chip.classList.add("active");
                 render();
+                applyFilters();
+            });
+        });
+    }
+
+    var stockChips = document.getElementById("stock-chips");
+    if (stockChips) {
+        stockChips.querySelectorAll(".chip").forEach(function (chip) {
+            chip.addEventListener("click", function () {
+                stockFilter = chip.getAttribute("data-stock") || "all";
+                stockChips.querySelectorAll(".chip").forEach(function (x) {
+                    x.classList.remove("active");
+                });
+                chip.classList.add("active");
                 applyFilters();
             });
         });

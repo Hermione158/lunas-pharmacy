@@ -52,6 +52,11 @@
         <div class="inv-toolbar" id="current-inventory">
             <input type="text" id="inv-search" class="inv-search" placeholder="Search medicine or category..." aria-label="Search inventory" />
             <div class="inv-chips" id="inv-chips"></div>
+            <div class="inv-chips" id="stock-chips">
+                <button type="button" class="chip active" data-stock="all">All stock</button>
+                <button type="button" class="chip" data-stock="low">Low stock</button>
+                <button type="button" class="chip" data-stock="out">Out of stock</button>
+            </div>
             <button type="button" id="refresh-btn" class="btn btn-soft">Refresh</button>
             <button type="button" id="export-btn" class="btn btn-outline">Export</button>
             <span class="hint" id="save-hint"></span>

@@ -75,6 +75,7 @@
                 (archived ? ' <span class="badge badge-archived">Archived</span>' : "") + "</td>" +
                 "<td>" + esc(formatDate(u.created_at)) + "</td>" +
                 '<td><div class="row-actions">' +
+                '<button type="button" class="icon-btn icon-edit">Edit</button>' +
                 (archived
                     ? '<button type="button" class="icon-btn icon-restore">Restore</button>'
                     : '<button type="button" class="icon-btn icon-archive"' + (isSelf ? " disabled" : "") + ">Archive</button>") +
@@ -136,10 +137,71 @@
         });
     }
 
+    // --- Edit account ---
+    var editOverlay = document.getElementById("user-edit-overlay");
+    var editUser = null;
+
+    function openEdit(user) {
+        editUser = user;
+        document.getElementById("edit-username").value = user.username;
+        document.getElementById("edit-role").value = user.role;
+        document.getElementById("edit-password").value = "";
+        var h = document.getElementById("edit-hint");
+        if (h) h.textContent = "";
+        if (editOverlay) editOverlay.hidden = false;
+    }
+
+    function closeEdit() {
+        if (editOverlay) editOverlay.hidden = true;
+        editUser = null;
+    }
+
+    var editSave = document.getElementById("edit-save");
+    if (editSave) {
+        editSave.addEventListener("click", async function () {
+            if (!editUser) return;
+            var username = document.getElementById("edit-username").value.trim();
+            var role = document.getElementById("edit-role").value;
+            var password = document.getElementById("edit-password").value;
+            var hint = document.getElementById("edit-hint");
+            try {
+                var patch = { username: username, role: role };
+                if (password.trim() !== "") patch.password = password;
+                await Api.updateUser(editUser.id, patch);
+                closeEdit();
+                await load();
+                flash("Account \"" + username + "\" updated.");
+            } catch (err) {
+                if (!handleAuthError(err)) {
+                    if (hint) hint.textContent = err.message;
+                }
+            }
+        });
+    }
+
+    var editCancel = document.getElementById("edit-cancel");
+    if (editCancel) editCancel.addEventListener("click", closeEdit);
+
+    if (editOverlay) {
+        editOverlay.addEventListener("click", function (e) {
+            if (e.target === editOverlay) closeEdit();
+        });
+    }
+
     // --- Archive / restore account ---
     table.addEventListener("click", async function (e) {
         var btn = e.target;
         if (!btn.classList) return;
+
+        if (btn.classList.contains("icon-edit")) {
+            var row = btn.closest ? btn.closest("tr") : null;
+            if (!row) return;
+            var user = users.find(function (u) { return String(u.id) === row.getAttribute("data-id"); });
+            if (!user) return;
+            openEdit(user);
+            return;
+        }
+
         var archiving = btn.classList.contains("icon-archive");
         if (!archiving && !btn.classList.contains("icon-restore")) return;
 

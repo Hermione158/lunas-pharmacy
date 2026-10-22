@@ -437,9 +437,10 @@ async function createSale(req, res, session) {
         if (body.discountPct === undefined || body.discountPct === null || isNaN(discountPct)) {
             discountPct = 0;
             discount = round2(Math.max(0, Number(body.discount) || 0));
+            if (discount > round2(gross * 0.20)) discount = round2(gross * 0.20);
         } else {
             if (discountPct < 0) discountPct = 0;
-            if (discountPct > 100) discountPct = 100;
+            if (discountPct > 20) discountPct = 20;
             discountPct = round2(discountPct);
             discount = round2(gross * discountPct / 100);
         }

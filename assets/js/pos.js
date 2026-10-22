@@ -23,6 +23,7 @@
     var subtotalEl = document.getElementById("subtotal");
     var totalEl = document.getElementById("total");
     var discountInput = document.getElementById("discount-input");
+    var discountType = document.getElementById("discount-type");
     var discountAmountEl = document.getElementById("discount-amount");
     var searchInput = document.getElementById("search-input");
     var scanInput = document.getElementById("scan-input");
@@ -180,10 +181,14 @@
     }
 
     // The cashier types a percentage; the peso amount is derived from the running gross.
+    // Senior Citizen and PWD discounts are fixed at 20%; any manual entry is capped at 20%.
     function readDiscountPct() {
+        if (discountType && (discountType.value === "senior" || discountType.value === "pwd")) {
+            return 20;
+        }
         var value = Number(discountInput.value) || 0;
         if (value < 0) value = 0;
-        if (value > 100) value = 100;
+        if (value > 20) value = 20;
         return Api.round2(value);
     }
 
@@ -513,6 +518,7 @@
 
         cart = {};
         discountInput.value = "";
+        if (discountType) { discountType.value = "none"; discountInput.disabled = false; }
         renderCart();
         renderList();
     });
@@ -529,6 +535,21 @@
     });
 
     discountInput.addEventListener("input", function () { renderCart(); });
+
+    if (discountType) {
+        discountType.addEventListener("change", function () {
+            if (discountType.value === "senior" || discountType.value === "pwd") {
+                discountInput.value = "20";
+                discountInput.disabled = true;
+            } else {
+                discountInput.disabled = false;
+                if (discountInput.value === "20" && (discountType.value === "none")) {
+                    // leave value; cashier can adjust
+                }
+            }
+            renderCart();
+        });
+    }
 
     searchInput.addEventListener("input", function () {
         searchTerm = searchInput.value.trim();

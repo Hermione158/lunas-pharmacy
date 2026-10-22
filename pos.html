@@ -45,10 +45,18 @@
             <div class="cart-totals">
                 <div class="total-row"><span>Items</span><span id="cart-count">0</span></div>
                 <div class="total-row"><span>Subtotal</span><span id="subtotal">₱ 0.00</span></div>
+                <label class="discount-row" for="discount-type">
+                    <span>Discount type</span>
+                    <select id="discount-type" class="discount-input" aria-label="Discount type">
+                        <option value="none">None</option>
+                        <option value="senior">Senior Citizen (20%)</option>
+                        <option value="pwd">PWD (20%)</option>
+                    </select>
+                </label>
                 <label class="discount-row" for="discount-input">
-                    <span>Discount</span>
+                    <span>Manual %</span>
                     <span class="discount-wrap">
-                        <input type="number" id="discount-input" class="discount-input" min="0" max="100" step="0.01" placeholder="0" aria-label="Discount percentage" />
+                        <input type="number" id="discount-input" class="discount-input" min="0" max="20" step="0.01" placeholder="0" aria-label="Discount percentage" />
                         <span class="discount-suffix" aria-hidden="true">%</span>
                     </span>
                 </label>
