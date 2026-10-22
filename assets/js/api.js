@@ -113,6 +113,10 @@
         importSampleCatalog: function () {
             return request("/api/products/import", { method: "POST" });
         },
+        getMovements: function (limit) {
+            return request("/api/movements?limit=" + encodeURIComponent(String(limit || 100)))
+                .then(function (data) { return data.movements; });
+        },
 
         checkout: function (payload) {
             return request("/api/sales", { method: "POST", body: payload });

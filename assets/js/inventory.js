@@ -712,11 +712,88 @@
             try {
                 await reload();
                 buildChips();
+                await loadLog();
                 flash("Inventory refreshed.");
             } catch (err) {
                 handleAuthError(err);
             }
         });
+    }
+
+    // --- Stock log (view page) ---
+    var logTable = document.getElementById("stock-log-table");
+    var logBody = logTable ? logTable.querySelector("tbody") : null;
+    var logSearch = document.getElementById("log-search");
+
+    var MOVEMENT_TYPES = {
+        added: "Added",
+        restock: "Restock",
+        adjust: "Adjustment",
+        bulk: "Bulk edit",
+        archive: "Archived",
+        restore: "Restored"
+    };
+
+    function movementLabel(type) {
+        return MOVEMENT_TYPES[type] || type;
+    }
+
+    function formatWhen(value) {
+        var d = new Date(value);
+        if (isNaN(d.getTime())) return "—";
+        return d.toLocaleString(undefined, {
+            year: "numeric", month: "short", day: "numeric", hour: "numeric", minute: "2-digit"
+        });
+    }
+
+    function applyLogFilter() {
+        if (!logTable) return;
+        var term = (logSearch ? logSearch.value : "").trim().toLowerCase();
+        var total = 0;
+        var visible = 0;
+        logTable.querySelectorAll("tbody tr").forEach(function (row) {
+            if (!row.getAttribute("data-log")) return;
+            total++;
+            var show = !term || row.textContent.toLowerCase().indexOf(term) !== -1;
+            row.style.display = show ? "" : "none";
+            if (show) visible++;
+        });
+        var empty = document.getElementById("log-empty");
+        if (empty) {
+            empty.textContent = total === 0 ? "No stock changes recorded yet." : "No stock changes match your search.";
+            empty.style.display = visible === 0 ? "block" : "none";
+        }
+    }
+
+    function renderLog(movements) {
+        if (!logBody) return;
+        logBody.innerHTML = (movements || []).map(function (m) {
+            var delta = Number(m.delta) || 0;
+            var qty = delta > 0 ? "+" + delta : String(delta);
+            var cls = delta > 0 ? "log-plus" : (delta < 0 ? "log-minus" : "log-zero");
+            return '<tr data-log="1">' +
+                "<td>" + esc(formatWhen(m.created_at)) + "</td>" +
+                '<td><span class="log-type">' + esc(movementLabel(m.type)) + "</span></td>" +
+                "<td>" + esc(m.product_name) + "</td>" +
+                '<td><span class="' + cls + '">' + qty + "</span></td>" +
+                "<td>" + esc(m.recorded_by) + "</td>" +
+                "</tr>";
+        }).join("");
+        applyLogFilter();
+    }
+
+    async function loadLog() {
+        if (!logBody) return;
+        try {
+            renderLog(await Api.getMovements(100));
+        } catch (err) {
+            if (handleAuthError(err)) return;
+            logBody.innerHTML = '<tr><td colspan="5">Could not load the stock log. ' + esc(err.message) + "</td></tr>";
+        }
+    }
+
+    if (logSearch) {
+        logSearch.addEventListener("input", applyLogFilter);
     }
 
     function revealChrome() {
@@ -756,6 +833,7 @@
         try {
             await reload();
             buildChips();
+            await loadLog();
         } catch (err) {
             if (!handleAuthError(err)) {
                 tbody.innerHTML = "<tr><td colspan=\"6\">Could not load inventory. " + esc(err.message) + "</td></tr>";

@@ -4,6 +4,7 @@
 
 const { getPool } = require("./_lib/db");
 const { requireAuth, requireAdmin } = require("./_lib/auth");
+const { recordMovement } = require("./_lib/movements");
 const { send, readBody, serverError, asMoney, asStock, asBarcode, asImage, duplicateError } = require("./_lib/util");
 
 function productFields(body) {
@@ -24,7 +25,7 @@ async function listProducts(res) {
     send(res, 200, { products: rows });
 }
 
-async function createProduct(req, res) {
+async function createProduct(req, res, session) {
     const data = productFields(readBody(req));
 
     if (!data.name) return send(res, 400, { error: "Item name is required." });
@@ -32,11 +33,21 @@ async function createProduct(req, res) {
     if (data.stock === null) return send(res, 400, { error: "Stock must be a non-negative whole number." });
     if (data.image === null) return send(res, 400, { error: "Attach a PNG, JPG, WEBP or GIF picture under 500 KB." });
 
+    const connection = await getPool().getConnection();
     try {
-        const [result] = await getPool().query(
+        await connection.beginTransaction();
+        const [result] = await connection.query(
             "INSERT INTO products (name, barcode, image, category, price, stock) VALUES (?, ?, ?, ?, ?, ?)",
             [data.name, data.barcode, data.image, data.category, data.price, data.stock]
         );
+        await recordMovement(connection, {
+            productId: result.insertId,
+            name: data.name,
+            delta: data.stock,
+            type: "added",
+            user: session.username
+        });
+        await connection.commit();
         return send(res, 201, {
             product: {
                 id: result.insertId,
@@ -49,10 +60,13 @@ async function createProduct(req, res) {
             }
         });
     } catch (err) {
+        try { await connection.rollback(); } catch (e) { /* connection already gone */ }
         if (err.code === "ER_DUP_ENTRY") {
             return send(res, 409, { error: duplicateError(err, data.name) });
         }
         throw err;
+    } finally {
+        connection.release();
     }
 }
 
@@ -63,8 +77,9 @@ module.exports = async function handler(req, res) {
             return await listProducts(res);
         }
         if (req.method === "POST") {
-            if (!requireAdmin(req, res)) return;
-            return await createProduct(req, res);
+            const session = requireAdmin(req, res);
+            if (!session) return;
+            return await createProduct(req, res, session);
         }
         return send(res, 405, { error: "Method not allowed." });
     } catch (err) {

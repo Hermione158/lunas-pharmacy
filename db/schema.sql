@@ -48,3 +48,21 @@ CREATE TABLE IF NOT EXISTS sale_items (
     CONSTRAINT fk_items_sale FOREIGN KEY (sale_id) REFERENCES sales (id) ON DELETE CASCADE,
     CONSTRAINT fk_items_product FOREIGN KEY (product_id) REFERENCES products (id) ON DELETE RESTRICT
 );
+
+-- Archive support. Existing clusters run these two lines once:
+ALTER TABLE users ADD COLUMN status VARCHAR(16) NOT NULL DEFAULT 'active';
+ALTER TABLE products ADD COLUMN status VARCHAR(16) NOT NULL DEFAULT 'active';
+
+-- Every stock change is journaled here so the Inventory page can show it.
+CREATE TABLE IF NOT EXISTS stock_movements (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    product_id INT NULL,
+    product_name VARCHAR(120) NOT NULL,
+    delta INT NOT NULL,
+    type VARCHAR(16) NOT NULL,
+    recorded_by VARCHAR(64) NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    KEY idx_movements_time (created_at),
+    CONSTRAINT fk_movements_product FOREIGN KEY (product_id) REFERENCES products (id) ON DELETE SET NULL
+);
+

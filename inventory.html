@@ -71,6 +71,27 @@
             </table>
             <p id="no-results" class="no-results" style="display:none;">No items match your search.</p>
         </div>
+
+        <div class="inv-table-wrap inv-log-wrap">
+            <div class="inv-log-head">
+                <h3>Stock Log</h3>
+                <input type="text" id="log-search" class="inv-search" placeholder="Search item, type or by..." aria-label="Search stock log" />
+                <span class="hint">Latest 100 stock changes.</span>
+            </div>
+            <table class="inv-table" id="stock-log-table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Type</th>
+                        <th>Item</th>
+                        <th>Qty</th>
+                        <th>By</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+            <p id="log-empty" class="no-results" style="display:none;">No stock changes recorded yet.</p>
+        </div>
     </main>
 
     <script src="assets/js/api.js"></script>

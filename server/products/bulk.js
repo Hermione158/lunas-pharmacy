@@ -14,6 +14,7 @@
 const { getPool } = require("../_lib/db");
 const { requireAdmin } = require("../_lib/auth");
 const { guardImmutableFields } = require("../_lib/lock");
+const { recordMovement } = require("../_lib/movements");
 const { send, readBody, serverError, asMoney, asStock, asBarcode, round2 } = require("../_lib/util");
 
 // A safety net so a runaway page cannot lock up the database.
@@ -95,7 +96,7 @@ function chunks(list, size) {
     return out;
 }
 
-async function saveAll(req, res) {
+async function saveAll(req, res, session) {
     const body = readBody(req);
     const parsed = parseItems(body.items);
     if (parsed.error) return send(res, 400, { error: parsed.error });
@@ -144,10 +145,17 @@ async function saveAll(req, res) {
 
         for (const item of items) {
             if (item.id === null) {
-                await connection.query(
+                const [inserted] = await connection.query(
                     "INSERT INTO products (name, barcode, image, category, price, stock) VALUES (?, ?, ?, ?, ?, ?)",
                     [item.name, item.barcode === undefined ? null : item.barcode, item.image, item.category, item.price, item.stock]
                 );
+                await recordMovement(connection, {
+                    productId: inserted.insertId,
+                    name: item.name,
+                    delta: item.stock,
+                    type: "added",
+                    user: session.username
+                });
                 added++;
                 continue;
             }
@@ -166,6 +174,16 @@ async function saveAll(req, res) {
                 "UPDATE products SET name = ?, barcode = ?, category = ?, image = ?, price = ?, stock = ? WHERE id = ?",
                 [item.name, barcode, item.category, image, item.price, item.stock, item.id]
             );
+            const delta = Number(item.stock) - Number(before.stock);
+            if (delta !== 0) {
+                await recordMovement(connection, {
+                    productId: item.id,
+                    name: item.name,
+                    delta: delta,
+                    type: "bulk",
+                    user: session.username
+                });
+            }
             updated++;
         }
 
@@ -193,8 +211,9 @@ async function saveAll(req, res) {
 module.exports = async function handler(req, res) {
     try {
         if (req.method !== "POST") return send(res, 405, { error: "Method not allowed." });
-        if (!requireAdmin(req, res)) return;
-        return await saveAll(req, res);
+        const session = requireAdmin(req, res);
+        if (!session) return;
+        return await saveAll(req, res, session);
     } catch (err) {
         return serverError(res, err);
     }

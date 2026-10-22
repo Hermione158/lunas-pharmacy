@@ -31,6 +31,7 @@ const FIXED_ROUTES = {
     "/api/setup": "setup.js",
     "/api/products": "products.js",
     "/api/sales": "sales.js",
+    "/api/movements": "movements.js",
     "/api/users": "users.js"
 };
 

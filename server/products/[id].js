@@ -5,6 +5,7 @@
 const { getPool } = require("../_lib/db");
 const { requireAdmin } = require("../_lib/auth");
 const { guardImmutableFields } = require("../_lib/lock");
+const { recordMovement } = require("../_lib/movements");
 const { send, readBody, serverError, asMoney, asStock, asBarcode, asImage, duplicateError } = require("../_lib/util");
 
 function parseId(req) {
@@ -20,7 +21,7 @@ async function findProduct(id) {
     return rows[0] || null;
 }
 
-async function updateProduct(req, res, id) {
+async function updateProduct(req, res, id, session) {
     const existing = await findProduct(id);
     if (!existing) return send(res, 404, { error: "Item not found." });
 
@@ -46,17 +47,33 @@ async function updateProduct(req, res, id) {
     const locked = guardImmutableFields(existing, next);
     if (locked) return send(res, 400, { error: locked });
 
+    const delta = Number(next.stock) - Number(existing.stock);
+    const connection = await getPool().getConnection();
     try {
-        await getPool().query(
+        await connection.beginTransaction();
+        await connection.query(
             "UPDATE products SET name = ?, barcode = ?, category = ?, image = ?, price = ?, stock = ? WHERE id = ?",
             [next.name, next.barcode, next.category, next.image, next.price, next.stock, id]
         );
+        if (delta !== 0) {
+            await recordMovement(connection, {
+                productId: id,
+                name: next.name,
+                delta: delta,
+                type: delta > 0 ? "restock" : "adjust",
+                user: session.username
+            });
+        }
+        await connection.commit();
         return send(res, 200, { product: { id: id, ...next } });
     } catch (err) {
+        try { await connection.rollback(); } catch (e) { /* connection already gone */ }
         if (err.code === "ER_DUP_ENTRY") {
             return send(res, 409, { error: duplicateError(err, next.name) });
         }
         throw err;
+    } finally {
+        connection.release();
     }
 }
 
@@ -77,12 +94,13 @@ async function deleteProduct(res, id) {
 
 module.exports = async function handler(req, res) {
     try {
-        if (!requireAdmin(req, res)) return;
+        const session = requireAdmin(req, res);
+        if (!session) return;
 
         const id = parseId(req);
         if (!id) return send(res, 400, { error: "Invalid item id." });
 
-        if (req.method === "PUT") return await updateProduct(req, res, id);
+        if (req.method === "PUT") return await updateProduct(req, res, id, session);
         if (req.method === "DELETE") return await deleteProduct(res, id);
         return send(res, 405, { error: "Method not allowed." });
     } catch (err) {

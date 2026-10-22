@@ -9,7 +9,10 @@ const path = require("path");
 const vm = require("vm");
 const { getPool } = require("../_lib/db");
 const { requireAdmin } = require("../_lib/auth");
+const { recordMovement } = require("../_lib/movements");
 const { send, serverError, asMoney } = require("../_lib/util");
+
+const NAME_CHUNK = 200;
 
 // assets/js/products.js is a plain browser file (window.LUNA_PRODUCTS = [...]).
 // Run it in a sandbox so it can be read from Node too, the same way the seed
@@ -47,7 +50,17 @@ function catalogRows(products) {
     return rows;
 }
 
-async function importCatalog(req, res) {
+function chunks(list, size) {
+    const out = [];
+    for (let i = 0; i < list.length; i += size) out.push(list.slice(i, i + size));
+    return out;
+}
+
+function placeholders(size) {
+    return new Array(size).fill("?").join(", ");
+}
+
+async function importCatalog(req, res, session) {
     let rows;
     try {
         rows = catalogRows(loadCatalog());
@@ -61,17 +74,50 @@ async function importCatalog(req, res) {
         return send(res, 503, { error: "The sample catalog file is empty. Add items one by one with + Add Item." });
     }
 
+    const names = rows.map(function (row) { return row[0]; });
+
+    // Remember which names were already in the inventory, so the log only
+    // records the items this import actually created.
+    const existing = new Set();
+    for (const group of chunks(names, NAME_CHUNK)) {
+        const [found] = await getPool().query(
+            "SELECT name FROM products WHERE name IN (" + placeholders(group.length) + ")",
+            group
+        );
+        for (const row of found) existing.add(String(row.name));
+    }
+
     // One statement, so the import is atomic. INSERT IGNORE turns a duplicate
     // name into a warning, which makes the row count the number actually added.
-    const placeholders = rows.map(() => "(?, ?, ?, ?, ?)").join(", ");
+    const values = rows.map(() => "(?, ?, ?, ?, ?)").join(", ");
     const params = [].concat(...rows);
 
     const [result] = await getPool().query(
-        "INSERT IGNORE INTO products (name, image, category, price, stock) VALUES " + placeholders,
+        "INSERT IGNORE INTO products (name, image, category, price, stock) VALUES " + values,
         params
     );
 
     const imported = Number(result.affectedRows || 0);
+
+    if (imported > 0) {
+        for (const group of chunks(names, NAME_CHUNK)) {
+            const [found] = await getPool().query(
+                "SELECT id, name FROM products WHERE name IN (" + placeholders(group.length) + ")",
+                group
+            );
+            for (const row of found) {
+                if (existing.has(String(row.name))) continue;
+                await recordMovement(getPool(), {
+                    productId: row.id,
+                    name: row.name,
+                    delta: 0,
+                    type: "added",
+                    user: session.username
+                });
+            }
+        }
+    }
+
     return send(res, 200, {
         imported,
         skipped: rows.length - imported,
@@ -82,8 +128,9 @@ async function importCatalog(req, res) {
 module.exports = async function handler(req, res) {
     try {
         if (req.method !== "POST") return send(res, 405, { error: "Method not allowed." });
-        if (!requireAdmin(req, res)) return;
-        return await importCatalog(req, res);
+        const session = requireAdmin(req, res);
+        if (!session) return;
+        return await importCatalog(req, res, session);
     } catch (err) {
         return serverError(res, err);
     }

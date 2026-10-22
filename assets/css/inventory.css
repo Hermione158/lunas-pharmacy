@@ -1007,3 +1007,60 @@ body {
         page-break-inside: avoid;
     }
 }
+
+/* Stock log */
+.inv-log-wrap {
+    margin-top: 24px;
+}
+
+.inv-log-head {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+    padding: 16px 18px;
+    border-bottom: 1px solid #f3e2e8;
+}
+
+.inv-log-head h3 {
+    font-size: 16px;
+    font-weight: 800;
+    color: #382449;
+}
+
+.inv-log-head .inv-search {
+    flex: 1;
+    min-width: 220px;
+}
+
+.inv-log-head .hint {
+    color: #8b7d92;
+    font-size: 12px;
+}
+
+.log-type {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 999px;
+    background: #f6eef2;
+    color: #382449;
+    font-size: 12px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.log-plus {
+    color: #1a7a4a;
+    font-weight: 700;
+}
+
+.log-minus {
+    color: #b3261e;
+    font-weight: 700;
+}
+
+.log-zero {
+    color: #6f6474;
+    font-weight: 600;
+}
+
