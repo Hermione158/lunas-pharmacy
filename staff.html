@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Workspace - Luna's Pharmacy</title>
+    <link rel="stylesheet" href="assets/css/inventory.css">
+    <link rel="stylesheet" href="assets/css/staff.css">
+</head>
+<body data-page="staff">
+
+    <header class="inv-header">
+        <img class="inv-logo" src="assets/images/logo.png" alt="Luna's Pharmacy Logo" />
+        <div class="inv-title">
+            <h1>Workspace</h1>
+            <span id="role-label">Staff</span>
+        </div>
+        <nav class="inv-nav">
+            <a href="inventory.html" class="inv-link">Inventory</a>
+            <a href="reports.html" class="inv-link">Reports</a>
+            <a href="home.html" class="inv-link">Back to Store</a>
+            <button type="button" class="inv-logout">Log Out</button>
+        </nav>
+    </header>
+
+    <main class="inv-main">
+        <div class="inv-page-head">
+            <div>
+                <h2 id="staff-greeting">Welcome back.</h2>
+                <p>Everything for the shift in one place. Pick where you want to start.</p>
+            </div>
+            <div class="inv-stats">
+                <div class="stat-card">
+                    <div class="label">Items</div>
+                    <div class="value" id="hub-total">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="label">Low Stock</div>
+                    <div class="value" id="hub-low">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="label">Out of Stock</div>
+                    <div class="value" id="hub-out">0</div>
+                </div>
+            </div>
+        </div>
+
+        <section class="hub-grid" aria-label="Workspace shortcuts">
+            <a class="hub-card" href="pos.html">
+                <span class="hub-kicker">Register</span>
+                <h3>Point of Sale</h3>
+                <p>Scan items, take payment and print a receipt.</p>
+                <span class="hub-go">Open register</span>
+            </a>
+
+            <a class="hub-card" href="inventory.html">
+                <span class="hub-kicker">Stock</span>
+                <h3>Inventory</h3>
+                <p>See what is on the shelves and what needs a restock.</p>
+                <span class="hub-go">View stock</span>
+            </a>
+
+            <a class="hub-card hub-admin" href="inventory-edit.html" style="display:none;">
+                <span class="hub-kicker">Update</span>
+                <h3>Update Inventory</h3>
+                <p>Add medicines, change prices and save stock counts.</p>
+                <span class="hub-go">Edit inventory</span>
+            </a>
+
+            <a class="hub-card hub-admin" href="labels.html" style="display:none;">
+                <span class="hub-kicker">Print</span>
+                <h3>Barcode Labels</h3>
+                <p>Print shelf labels with each item's price and barcode.</p>
+                <span class="hub-go">Open labels</span>
+            </a>
+
+            <a class="hub-card" href="reports.html">
+                <span class="hub-kicker">Sales</span>
+                <h3>Reports</h3>
+                <p>Check today's sales, best sellers and stock warnings.</p>
+                <span class="hub-go">View reports</span>
+            </a>
+
+            <a class="hub-card hub-admin" href="users.html" style="display:none;">
+                <span class="hub-kicker">Team</span>
+                <h3>Accounts</h3>
+                <p>Create cashier and administrator logins, or archive them.</p>
+                <span class="hub-go">Manage accounts</span>
+            </a>
+        </section>
+
+        <p class="hint" id="hub-hint"></p>
+    </main>
+
+    <script src="assets/js/api.js"></script>
+    <script src="assets/js/staff.js"></script>
+</body>
+</html>

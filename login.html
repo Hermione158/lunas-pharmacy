@@ -64,7 +64,7 @@
                 var result = await Api.login(username, password);
                 sessionStorage.setItem("luna_user", result.user.role);
                 sessionStorage.setItem("luna_name", result.user.username);
-                window.location.href = result.user.role === "admin" ? "inventory-edit.html" : "pos.html";
+                window.location.href = result.user.role === "admin" ? "staff.html" : "pos.html";
             } catch (err) {
                 error.textContent = err.status === 401 ? "Incorrect username or password." : err.message;
                 error.style.display = "block";
