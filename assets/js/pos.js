@@ -536,7 +536,7 @@
     });
 
     async function loadProducts() {
-        products = await Api.getProducts();
+        products = await Api.getProducts("active");
         byId = {};
         byBarcode = {};
         products.forEach(function (p) {

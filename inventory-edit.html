@@ -49,6 +49,11 @@
         <div class="inv-toolbar">
             <input type="text" id="inv-search" class="inv-search" placeholder="Search medicine or category..." aria-label="Search inventory" />
             <div class="inv-chips" id="inv-chips"></div>
+            <div class="inv-chips" id="inv-status-chips" aria-label="Show items">
+                <button type="button" class="chip active" data-status="active">Active</button>
+                <button type="button" class="chip" data-status="archived">Archived</button>
+                <button type="button" class="chip" data-status="all">All</button>
+            </div>
             <button type="button" id="add-item" class="btn btn-soft">+ Add Item</button>
             <button type="button" id="import-catalog" class="btn btn-outline" title="Add the sample medicine list at 0 stock. Items you already have are kept.">Import sample catalog</button>
             <button type="button" id="save-all-btn" class="btn btn-primary">Save All</button>

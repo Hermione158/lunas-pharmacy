@@ -31,6 +31,7 @@
     var search = document.getElementById("inv-search");
     var chipsBox = document.getElementById("inv-chips");
     var activeCat = "All";
+    var statusFilter = "active";
 
     // Pictures attached to a new row, kept next to the row until it is saved.
     var rowImages = new WeakMap();
@@ -191,22 +192,33 @@
         if (!tbody) return;
 
         if (page === "inventory-edit") {
-            tbody.innerHTML = products.map(function (p) {
+            tbody.innerHTML = products.filter(function (p) {
+                return statusFilter === "all" || (p.status || "active") === statusFilter;
+            }).map(function (p) {
                 var st = Api.statusFor(p.stock);
-                return '<tr data-id="' + p.id + '" data-name="' + esc(p.name) + '" data-cat="' + esc(p.category) + '">' +
+                var archived = (p.status || "active") === "archived";
+                return '<tr data-id="' + p.id + '" data-name="' + esc(p.name) + '" data-cat="' + esc(p.category) + '"' +
+                    ' data-status="' + (archived ? "archived" : "active") + '"' +
+                    (archived ? ' class="inv-row-archived"' : "") + ">" +
                     "<td>" + itemCellEdit(p) + "</td>" +
                     "<td>" + barcodeCell(p.barcode) + "</td>" +
                     '<td><input class="inv-input" data-field="c" type="text" list="inv-category-list" value="' + esc(p.category) + '" /></td>' +
                     "<td>" + priceCell(p.price) + "</td>" +
                     '<td><input class="inv-input narrow" data-field="s" type="number" min="0" value="' + p.stock + '" /></td>' +
-                    '<td><span class="badge ' + st.cls + '">' + st.label + "</span></td>" +
+                    '<td><span class="badge ' + st.cls + '">' + st.label + "</span>" +
+                    (archived ? ' <span class="badge badge-archived">Archived</span>' : "") + "</td>" +
                     '<td><div class="row-actions">' +
                     '<button type="button" class="icon-btn icon-save">Save</button>' +
-                    '<button type="button" class="icon-btn icon-del">Delete</button>' +
+                    (archived
+                        ? '<button type="button" class="icon-btn icon-restore">Restore</button>'
+                        : '<button type="button" class="icon-btn icon-del">Delete</button>' +
+                          '<button type="button" class="icon-btn icon-archive">Archive</button>') +
                     "</div></td></tr>";
             }).join("");
         } else {
-            tbody.innerHTML = products.map(function (p) {
+            tbody.innerHTML = products.filter(function (p) {
+                return (p.status || "active") !== "archived";
+            }).map(function (p) {
                 var st = Api.statusFor(p.stock);
                 return '<tr data-id="' + p.id + '" data-cat="' + esc(p.category) + '">' +
                     "<td>" + itemCell(p) + "</td>" +
@@ -285,6 +297,22 @@
 
     if (search) {
         search.addEventListener("input", applyFilters);
+    }
+
+    // --- Active / Archived filter (Update Inventory page) ---
+    var statusChips = document.getElementById("inv-status-chips");
+    if (statusChips) {
+        statusChips.querySelectorAll(".chip").forEach(function (chip) {
+            chip.addEventListener("click", function () {
+                statusFilter = chip.getAttribute("data-status") || "active";
+                statusChips.querySelectorAll(".chip").forEach(function (x) {
+                    x.classList.remove("active");
+                });
+                chip.classList.add("active");
+                render();
+                applyFilters();
+            });
+        });
     }
 
     // --- Status messages ---
@@ -492,6 +520,40 @@
             } else if (btn.classList.contains("inv-attach-remove")) {
                 clearAttached(row);
                 flash("Picture removed.");
+            } else if (btn.classList.contains("icon-archive")) {
+                var archiveId = Number(row.getAttribute("data-id"));
+                if (!archiveId) return;
+                var archiveName = row.getAttribute("data-name") || "";
+                var archiveGo = await showConfirm({
+                    title: "Archive this item?",
+                    message: "Archive \"" + archiveName + "\"? It disappears from the POS and labels, but its history is kept.",
+                    confirmText: "Yes, Archive"
+                });
+                if (!archiveGo) return;
+                try {
+                    await Api.updateProduct(archiveId, { status: "archived" });
+                    await reload();
+                    flash("\"" + archiveName + "\" archived.");
+                } catch (err) {
+                    if (!handleAuthError(err)) alert(err.message);
+                }
+            } else if (btn.classList.contains("icon-restore")) {
+                var restoreId = Number(row.getAttribute("data-id"));
+                if (!restoreId) return;
+                var restoreName = row.getAttribute("data-name") || "";
+                var restoreGo = await showConfirm({
+                    title: "Restore this item?",
+                    message: "Restore \"" + restoreName + "\" to the active inventory?",
+                    confirmText: "Yes, Restore"
+                });
+                if (!restoreGo) return;
+                try {
+                    await Api.updateProduct(restoreId, { status: "active" });
+                    await reload();
+                    flash("\"" + restoreName + "\" restored.");
+                } catch (err) {
+                    if (!handleAuthError(err)) alert(err.message);
+                }
             } else if (btn.classList.contains("icon-del")) {
                 var id = Number(row.getAttribute("data-id"));
                 if (!id) return;

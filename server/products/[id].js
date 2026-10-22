@@ -14,12 +14,23 @@ function parseId(req) {
 }
 
 async function findProduct(id) {
-    const [rows] = await getPool().query(
-        "SELECT id, name, barcode, image, category, price, stock FROM products WHERE id = ? LIMIT 1",
-        [id]
-    );
-    return rows[0] || null;
+    try {
+        const [rows] = await getPool().query(
+            "SELECT id, name, barcode, image, category, price, stock, status FROM products WHERE id = ? LIMIT 1",
+            [id]
+        );
+        return rows[0] || null;
+    } catch (err) {
+        if (!err || (err.errno !== 1054 && err.code !== "ER_BAD_FIELD_ERROR")) throw err;
+        const [rows] = await getPool().query(
+            "SELECT id, name, barcode, image, category, price, stock FROM products WHERE id = ? LIMIT 1",
+            [id]
+        );
+        return rows[0] || null;
+    }
 }
+
+const STATUSES = ["active", "archived"];
 
 async function updateProduct(req, res, id, session) {
     const existing = await findProduct(id);
@@ -33,7 +44,8 @@ async function updateProduct(req, res, id, session) {
         category: body.category === undefined ? existing.category : String(body.category).trim() || existing.category,
         image: body.image === undefined ? existing.image : (image === null ? existing.image : image),
         price: body.price === undefined ? existing.price : asMoney(body.price),
-        stock: body.stock === undefined ? existing.stock : asStock(body.stock)
+        stock: body.stock === undefined ? existing.stock : asStock(body.stock),
+        status: body.status === undefined ? (existing.status || "active") : String(body.status)
     };
 
     if (body.image !== undefined && image === null) {
@@ -43,18 +55,38 @@ async function updateProduct(req, res, id, session) {
     if (!next.name) return send(res, 400, { error: "Item name is required." });
     if (next.price === null) return send(res, 400, { error: "Price must be a non-negative number." });
     if (next.stock === null) return send(res, 400, { error: "Stock must be a non-negative whole number." });
+    if (!STATUSES.includes(next.status)) {
+        return send(res, 400, { error: "Status must be active or archived." });
+    }
 
     const locked = guardImmutableFields(existing, next);
     if (locked) return send(res, 400, { error: locked });
 
     const delta = Number(next.stock) - Number(existing.stock);
+    const statusChanged = body.status !== undefined && next.status !== (existing.status || "active");
     const connection = await getPool().getConnection();
     try {
         await connection.beginTransaction();
-        await connection.query(
-            "UPDATE products SET name = ?, barcode = ?, category = ?, image = ?, price = ?, stock = ? WHERE id = ?",
-            [next.name, next.barcode, next.category, next.image, next.price, next.stock, id]
-        );
+        if (body.status === undefined) {
+            await connection.query(
+                "UPDATE products SET name = ?, barcode = ?, category = ?, image = ?, price = ?, stock = ? WHERE id = ?",
+                [next.name, next.barcode, next.category, next.image, next.price, next.stock, id]
+            );
+        } else {
+            await connection.query(
+                "UPDATE products SET name = ?, barcode = ?, category = ?, image = ?, price = ?, stock = ?, status = ? WHERE id = ?",
+                [next.name, next.barcode, next.category, next.image, next.price, next.stock, next.status, id]
+            );
+        }
+        if (statusChanged) {
+            await recordMovement(connection, {
+                productId: id,
+                name: next.name,
+                delta: 0,
+                type: next.status === "archived" ? "archive" : "restore",
+                user: session.username
+            });
+        }
         if (delta !== 0) {
             await recordMovement(connection, {
                 productId: id,

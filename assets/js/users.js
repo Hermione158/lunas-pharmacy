@@ -30,6 +30,7 @@
 
     var users = [];
     var currentUserId = null;
+    var statusFilter = "active";
 
     function esc(value) {
         return String(value)
@@ -62,22 +63,29 @@
     }
 
     function render() {
-        tbody.innerHTML = users.map(function (u) {
+        tbody.innerHTML = users.filter(function (u) {
+            return statusFilter === "all" || (u.status || "active") === statusFilter;
+        }).map(function (u) {
             var isSelf = currentUserId !== null && u.id === currentUserId;
+            var archived = (u.status || "active") === "archived";
             var roleCls = u.role === "admin" ? "badge badge-in" : "badge";
-            return '<tr data-id="' + u.id + '">' +
+            return '<tr data-id="' + u.id + '"' + (archived ? ' class="inv-row-archived"' : "") + ">" +
                 "<td>" + esc(u.username) + (isSelf ? ' <span class="inv-item-sub">(you)</span>' : "") + "</td>" +
-                '<td><span class="' + roleCls + '">' + (u.role === "admin" ? "Administrator" : "Cashier") + "</span></td>" +
+                '<td><span class="' + roleCls + '">' + (u.role === "admin" ? "Administrator" : "Cashier") + "</span>" +
+                (archived ? ' <span class="badge badge-archived">Archived</span>' : "") + "</td>" +
                 "<td>" + esc(formatDate(u.created_at)) + "</td>" +
                 '<td><div class="row-actions">' +
-                '<button type="button" class="icon-btn icon-del"' + (isSelf ? " disabled" : "") + ">Delete</button>" +
+                (archived
+                    ? '<button type="button" class="icon-btn icon-restore">Restore</button>'
+                    : '<button type="button" class="icon-btn icon-archive"' + (isSelf ? " disabled" : "") + ">Archive</button>") +
                 "</div></td></tr>";
         }).join("");
 
-        var admins = users.filter(function (u) { return u.role === "admin"; }).length;
-        document.getElementById("total-users").textContent = users.length;
+        var active = users.filter(function (u) { return (u.status || "active") === "active"; });
+        var admins = active.filter(function (u) { return u.role === "admin"; }).length;
+        document.getElementById("total-users").textContent = active.length;
         document.getElementById("admin-count").textContent = admins;
-        document.getElementById("cashier-count").textContent = users.length - admins;
+        document.getElementById("cashier-count").textContent = active.length - admins;
     }
 
     async function load() {
@@ -113,10 +121,27 @@
         }
     });
 
-    // --- Delete account ---
+    // --- Active / Archived filter ---
+    var statusChips = document.getElementById("user-status-chips");
+    if (statusChips) {
+        statusChips.querySelectorAll(".chip").forEach(function (chip) {
+            chip.addEventListener("click", function () {
+                statusFilter = chip.getAttribute("data-status") || "active";
+                statusChips.querySelectorAll(".chip").forEach(function (x) {
+                    x.classList.remove("active");
+                });
+                chip.classList.add("active");
+                render();
+            });
+        });
+    }
+
+    // --- Archive / restore account ---
     table.addEventListener("click", async function (e) {
         var btn = e.target;
-        if (!btn.classList || !btn.classList.contains("icon-del")) return;
+        if (!btn.classList) return;
+        var archiving = btn.classList.contains("icon-archive");
+        if (!archiving && !btn.classList.contains("icon-restore")) return;
 
         var row = btn.closest ? btn.closest("tr") : null;
         if (!row) return;
@@ -125,16 +150,18 @@
         if (!user) return;
 
         var goAhead = await showConfirm({
-            title: "Delete this account?",
-            message: "Delete the account \"" + user.username + "\"? This cannot be undone.",
-            confirmText: "Yes, Delete"
+            title: archiving ? "Archive this account?" : "Restore this account?",
+            message: archiving
+                ? "Archive \"" + user.username + "\"? They can no longer sign in until restored."
+                : "Restore \"" + user.username + "\"? They will be able to sign in again.",
+            confirmText: archiving ? "Yes, Archive" : "Yes, Restore"
         });
         if (!goAhead) return;
 
         try {
-            await Api.deleteUser(user.id);
+            await Api.archiveUser(user.id, archiving ? "archived" : "active");
             await load();
-            flash("\"" + user.username + "\" deleted.");
+            flash("\"" + user.username + "\" " + (archiving ? "archived." : "restored."));
         } catch (err) {
             if (!handleAuthError(err)) alert(err.message);
         }

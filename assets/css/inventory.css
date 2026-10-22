@@ -1064,3 +1064,23 @@ body {
     font-weight: 600;
 }
 
+
+/* --- Archived items and accounts --- */
+.badge-archived {
+    background: #efe9f2;
+    color: #6d5b77;
+}
+
+.inv-row-archived td {
+    background: #faf7fb;
+    color: #8b7d92;
+}
+
+.inv-row-archived .inv-thumb,
+.inv-row-archived .inv-item-pic {
+    opacity: 0.45;
+}
+
+.user-status-chips {
+    margin: 0 0 16px;
+}

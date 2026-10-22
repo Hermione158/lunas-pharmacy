@@ -157,23 +157,36 @@ async function busyPeriods(pool, tz) {
 async function deadStock(pool, where, params) {
     const inner = where ? where.replace("WHERE s.created_at", "AND s.created_at") : "";
 
-    const [rows] = await pool.query(
-        "SELECT p.id, p.name, p.category, p.stock FROM products p " +
-        "WHERE NOT EXISTS (SELECT 1 FROM sale_items si JOIN sales s ON s.id = si.sale_id " +
-        "WHERE si.product_id = p.id " + inner + ") ORDER BY p.name LIMIT 100",
-        params
-    );
+    async function run(filter) {
+        const [rows] = await pool.query(
+            "SELECT p.id, p.name, p.category, p.stock FROM products p " +
+            "WHERE " + filter + "NOT EXISTS (SELECT 1 FROM sale_items si JOIN sales s ON s.id = si.sale_id " +
+            "WHERE si.product_id = p.id " + inner + ") ORDER BY p.name LIMIT 100",
+            params
+        );
 
-    const [[count]] = await pool.query(
-        "SELECT COUNT(*) AS total FROM products p " +
-        "WHERE NOT EXISTS (SELECT 1 FROM sale_items si JOIN sales s ON s.id = si.sale_id " +
-        "WHERE si.product_id = p.id " + inner + ")",
-        params
-    );
+        const [[count]] = await pool.query(
+            "SELECT COUNT(*) AS total FROM products p " +
+            "WHERE " + filter + "NOT EXISTS (SELECT 1 FROM sale_items si JOIN sales s ON s.id = si.sale_id " +
+            "WHERE si.product_id = p.id " + inner + ")",
+            params
+        );
+
+        return { rows: rows, count: count };
+    }
+
+    let found;
+    try {
+        found = await run("p.status = 'active' AND ");
+    } catch (err) {
+        // Deployments made before the status column was added keep reporting.
+        if (!err || (err.errno !== 1054 && err.code !== "ER_BAD_FIELD_ERROR")) throw err;
+        found = await run("");
+    }
 
     return {
-        total: Number(count.total),
-        items: rows.map(function (r) {
+        total: Number(found.count.total),
+        items: found.rows.map(function (r) {
             return {
                 id: r.id,
                 name: String(r.name),

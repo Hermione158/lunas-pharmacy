@@ -18,11 +18,33 @@ function productFields(body) {
     };
 }
 
-async function listProducts(res) {
-    const [rows] = await getPool().query(
-        "SELECT id, name, barcode, image, category, price, stock FROM products ORDER BY name ASC"
-    );
-    send(res, 200, { products: rows });
+async function listProducts(req, res) {
+    const status = req.query && req.query.status;
+    const filter = status === "active" || status === "archived";
+
+    let rows;
+    try {
+        const [found] = await getPool().query(
+            "SELECT id, name, barcode, image, category, price, stock, status FROM products" +
+            (filter ? " WHERE status = ?" : "") + " ORDER BY name ASC",
+            filter ? [status] : []
+        );
+        rows = found;
+    } catch (err) {
+        // Deployments made before the status column was added keep listing.
+        if (!err || (err.errno !== 1054 && err.code !== "ER_BAD_FIELD_ERROR")) throw err;
+        if (filter && status === "archived") return send(res, 200, { products: [] });
+        const [found] = await getPool().query(
+            "SELECT id, name, barcode, image, category, price, stock FROM products ORDER BY name ASC"
+        );
+        rows = found;
+    }
+
+    send(res, 200, {
+        products: rows.map(function (row) {
+            return Object.assign({}, row, { status: row.status || "active" });
+        })
+    });
 }
 
 async function createProduct(req, res, session) {
@@ -74,7 +96,7 @@ module.exports = async function handler(req, res) {
     try {
         if (req.method === "GET") {
             if (!requireAuth(req, res)) return;
-            return await listProducts(res);
+            return await listProducts(req, res);
         }
         if (req.method === "POST") {
             const session = requireAdmin(req, res);

@@ -12,15 +12,28 @@ const MIN_PASSWORD = 6;
 const ROLES = ["admin", "cashier"];
 
 async function listUsers(res) {
-    const [rows] = await getPool().query(
-        "SELECT id, username, role, created_at FROM users ORDER BY role ASC, username ASC"
-    );
+    let rows;
+    try {
+        const [found] = await getPool().query(
+            "SELECT id, username, role, created_at, status FROM users ORDER BY role ASC, username ASC"
+        );
+        rows = found;
+    } catch (err) {
+        // Deployments made before the status column was added keep listing.
+        if (!err || (err.errno !== 1054 && err.code !== "ER_BAD_FIELD_ERROR")) throw err;
+        const [found] = await getPool().query(
+            "SELECT id, username, role, created_at FROM users ORDER BY role ASC, username ASC"
+        );
+        rows = found;
+    }
+
     send(res, 200, {
         users: rows.map(function (u) {
             return {
                 id: u.id,
                 username: u.username,
                 role: u.role,
+                status: u.status || "active",
                 created_at: new Date(u.created_at).toISOString()
             };
         })

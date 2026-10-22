@@ -126,7 +126,7 @@
         revealChrome();
 
         try {
-            products = await Api.getProducts();
+            products = await Api.getProducts("active");
         } catch (err) {
             if (handleAuthError(err)) return;
             if (hint) hint.textContent = "Could not load the inventory: " + err.message;

@@ -20,11 +20,22 @@ module.exports = async function handler(req, res) {
             return send(res, 400, { error: "Enter your username and password." });
         }
 
-        const [rows] = await getPool().query(
-            "SELECT id, username, password_hash, role FROM users WHERE username = ? LIMIT 1",
-            [username]
-        );
-        const user = rows[0];
+        let user;
+        try {
+            const [rows] = await getPool().query(
+                "SELECT id, username, password_hash, role, status FROM users WHERE username = ? LIMIT 1",
+                [username]
+            );
+            user = rows[0];
+        } catch (err) {
+            // Deployments made before the status column was added still sign in.
+            if (!err || (err.errno !== 1054 && err.code !== "ER_BAD_FIELD_ERROR")) throw err;
+            const [rows] = await getPool().query(
+                "SELECT id, username, password_hash, role FROM users WHERE username = ? LIMIT 1",
+                [username]
+            );
+            user = rows[0];
+        }
 
         // Compare against a dummy hash when the user is unknown so the response
         // time does not reveal whether a username exists.
@@ -33,6 +44,9 @@ module.exports = async function handler(req, res) {
 
         if (!user || !ok) {
             return send(res, 401, { error: "Incorrect username or password." });
+        }
+        if (String(user.status || "active") === "archived") {
+            return send(res, 403, { error: "This account has been archived. Ask an administrator." });
         }
 
         const token = signSession(user);

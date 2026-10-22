@@ -95,8 +95,9 @@
             return request("/api/me");
         },
 
-        getProducts: function () {
-            return request("/api/products").then(function (data) { return data.products; });
+        getProducts: function (status) {
+            return request("/api/products" + (status ? "?status=" + encodeURIComponent(status) : ""))
+                .then(function (data) { return data.products; });
         },
         addProduct: function (product) {
             return request("/api/products", { method: "POST", body: product });
@@ -149,8 +150,8 @@
         addUser: function (user) {
             return request("/api/users", { method: "POST", body: user });
         },
-        deleteUser: function (id) {
-            return request("/api/users/" + id, { method: "DELETE" });
+        archiveUser: function (id, status) {
+            return request("/api/users/" + id, { method: "PUT", body: { status: status } });
         }
     };
 
