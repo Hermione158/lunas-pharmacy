@@ -678,6 +678,45 @@ body {
     font-size: 13px;
 }
 
+/* Saved items keep their name: shown as text, aligned with the inputs. */
+.inv-item-locked {
+    padding: 9px 0;
+    font-weight: 700;
+    color: #1e1e1e;
+    line-height: 1.25;
+}
+
+/* Barcode field with its Generate button */
+.inv-barcode-box {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.inv-barcode-box .barcode-input {
+    flex: 1 1 auto;
+}
+
+.inv-generate {
+    background: #ffe3ea;
+    color: #7a2a3d;
+    padding: 8px 10px;
+    white-space: nowrap;
+}
+
+.inv-input[readonly] {
+    background: #f4f0f3;
+    color: #6f6270;
+    border-color: #e7dde4;
+    cursor: not-allowed;
+}
+
+.inv-input[readonly]:focus {
+    border-color: #e7dde4;
+    box-shadow: none;
+    background: #f4f0f3;
+}
+
 /* Row actions */
 .row-actions {
     display: flex;

@@ -13,6 +13,7 @@
 
 const { getPool } = require("../_lib/db");
 const { requireAdmin } = require("../_lib/auth");
+const { guardImmutableFields } = require("../_lib/lock");
 const { send, readBody, serverError, asMoney, asStock, asBarcode, round2 } = require("../_lib/util");
 
 // A safety net so a runaway page cannot lock up the database.
@@ -122,6 +123,18 @@ async function saveAll(req, res) {
             if (item.id !== null && !existing.has(item.id)) {
                 await connection.rollback();
                 return send(res, 400, { error: "\"" + item.name + "\" is no longer in the inventory. Refresh the page and try again." });
+            }
+        }
+
+        // A saved item keeps its name and barcode (a missing barcode may still
+        // be filled in). The whole batch is refused up front, so one stale row
+        // cannot half-save the rest.
+        for (const item of items) {
+            if (item.id === null) continue;
+            const locked = guardImmutableFields(existing.get(item.id), item);
+            if (locked) {
+                await connection.rollback();
+                return send(res, 400, { error: locked });
             }
         }
 

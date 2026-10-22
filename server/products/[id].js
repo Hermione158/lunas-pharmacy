@@ -4,6 +4,7 @@
 
 const { getPool } = require("../_lib/db");
 const { requireAdmin } = require("../_lib/auth");
+const { guardImmutableFields } = require("../_lib/lock");
 const { send, readBody, serverError, asMoney, asStock, asBarcode, asImage, duplicateError } = require("../_lib/util");
 
 function parseId(req) {
@@ -41,6 +42,9 @@ async function updateProduct(req, res, id) {
     if (!next.name) return send(res, 400, { error: "Item name is required." });
     if (next.price === null) return send(res, 400, { error: "Price must be a non-negative number." });
     if (next.stock === null) return send(res, 400, { error: "Stock must be a non-negative whole number." });
+
+    const locked = guardImmutableFields(existing, next);
+    if (locked) return send(res, 400, { error: locked });
 
     try {
         await getPool().query(

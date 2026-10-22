@@ -67,6 +67,84 @@
         return isFinite(n) && n >= 0 ? Api.round2(n) : 0;
     }
 
+    // --- Barcodes: generated once, then permanent ---
+    // In-store EAN-13: "200" marks a code Luna's made itself, followed by nine
+    // random digits and the EAN-13 check digit, so scanners read it normally.
+    function ean13CheckDigit(digits12) {
+        var sum = 0;
+        for (var i = 0; i < 12; i++) {
+            var d = digits12.charCodeAt(i) - 48;
+            sum += i % 2 === 0 ? d : d * 3;
+        }
+        return (10 - (sum % 10)) % 10;
+    }
+
+    function generateBarcode() {
+        var used = {};
+        products.forEach(function (p) {
+            if (p.barcode) used[String(p.barcode)] = true;
+        });
+        if (tbody) {
+            tbody.querySelectorAll('[data-field="b"]').forEach(function (input) {
+                var text = String(input.value || "").trim();
+                if (text) used[text] = true;
+            });
+        }
+
+        for (var tries = 0; tries < 20; tries++) {
+            var code = "200";
+            for (var i = 0; i < 9; i++) code += Math.floor(Math.random() * 10);
+            code += ean13CheckDigit(code);
+            if (!used[code]) return code;
+        }
+        return null;
+    }
+
+    // A generated barcode can never be edited again: the field locks and the
+    // Generate button disappears.
+    function lockBarcodeInput(input) {
+        input.readOnly = true;
+        input.title = "This barcode is permanent.";
+        var box = input.closest ? input.closest(".inv-barcode-box") : input.parentNode;
+        var btn = box ? box.querySelector(".inv-generate") : null;
+        if (btn && btn.parentNode) btn.parentNode.removeChild(btn);
+    }
+
+    function barcodeCell(value) {
+        var code = value ? String(value) : "";
+        return '<div class="inv-barcode-box">' +
+            '<input class="inv-input barcode-input" data-field="b" type="text" value="' + esc(code) + '" placeholder="Scan or type"' +
+            (code ? ' readonly title="This barcode is permanent."' : "") + " />" +
+            (code ? "" : '<button type="button" class="icon-btn inv-generate" title="Make a unique in-store barcode. It cannot be changed after saving.">Generate</button>') +
+            "</div>";
+    }
+
+    // --- Categories: shared by the chips and the dropdown suggestions ---
+    function distinctCategories() {
+        var seen = {};
+        var cats = [];
+        products.forEach(function (p) {
+            var c = String(p.category || "").trim();
+            if (c && !seen[c]) {
+                seen[c] = true;
+                cats.push(c);
+            }
+        });
+        cats.sort(function (a, b) { return a.localeCompare(b); });
+        return cats;
+    }
+
+    function refreshCategoryList() {
+        var list = document.getElementById("inv-category-list");
+        if (!list) return;
+        list.innerHTML = "";
+        distinctCategories().forEach(function (c) {
+            var option = document.createElement("option");
+            option.value = c;
+            list.appendChild(option);
+        });
+    }
+
     function itemCell(p) {
         return '<div class="inv-item">' +
             '<img class="inv-thumb" src="' + esc(p.image || "assets/images/logo.png") + '" alt="" />' +
@@ -74,20 +152,23 @@
             '<div class="inv-item-sub">' + esc(p.category) + "</div></div></div>";
     }
 
+    // Saved items keep their name: it is shown as text, not an input.
     function itemCellEdit(p) {
         return '<div class="inv-item">' +
             '<img class="inv-thumb" src="' + esc(p.image || "assets/images/logo.png") + '" alt="" />' +
-            '<input class="inv-input" data-field="n" type="text" value="' + esc(p.name) + '" /></div>';
+            '<div class="inv-item-locked" title="Item names are permanent.">' + esc(p.name) + "</div></div>";
     }
 
-    // Reads the editable inputs of one row back into product fields.
+    // Reads the editable inputs of one row back into product fields. A saved
+    // item has no name input - its name comes from the row itself.
     function readRow(row) {
         function value(field) {
             var input = row.querySelector('[data-field="' + field + '"]');
             return input ? input.value : "";
         }
+        var nameInput = row.querySelector('[data-field="n"]');
         return {
-            name: value("n").trim(),
+            name: nameInput ? nameInput.value.trim() : String(row.getAttribute("data-name") || "").trim(),
             barcode: value("b").trim(),
             category: value("c").trim(),
             price: parsePrice(value("p")),
@@ -103,8 +184,8 @@
                 var st = Api.statusFor(p.stock);
                 return '<tr data-id="' + p.id + '" data-name="' + esc(p.name) + '" data-cat="' + esc(p.category) + '">' +
                     "<td>" + itemCellEdit(p) + "</td>" +
-                    '<td><input class="inv-input barcode-input" data-field="b" type="text" value="' + esc(p.barcode || "") + '" placeholder="Scan or type" /></td>' +
-                    '<td><input class="inv-input" data-field="c" type="text" value="' + esc(p.category) + '" /></td>' +
+                    "<td>" + barcodeCell(p.barcode) + "</td>" +
+                    '<td><input class="inv-input" data-field="c" type="text" list="inv-category-list" value="' + esc(p.category) + '" /></td>' +
                     '<td><input class="inv-input narrow" data-field="p" type="text" value="' + currency(p.price) + '" /></td>' +
                     '<td><input class="inv-input narrow" data-field="s" type="number" min="0" value="' + p.stock + '" /></td>' +
                     '<td><span class="badge ' + st.cls + '">' + st.label + "</span></td>" +
@@ -148,15 +229,9 @@
 
     // --- Category chips built from the product data ---
     function buildChips() {
+        refreshCategoryList();
         if (!chipsBox) return;
-        var cats = ["All"];
-        var seen = {};
-        products.forEach(function (p) {
-            if (!seen[p.category]) {
-                seen[p.category] = true;
-                cats.push(p.category);
-            }
-        });
+        var cats = ["All"].concat(distinctCategories());
         chipsBox.innerHTML = "";
         cats.forEach(function (c) {
             var btn = document.createElement("button");
@@ -216,6 +291,7 @@
         products = await Api.getProducts();
         render();
         applyFilters();
+        refreshCategoryList();
     }
 
     // --- Attached pictures ---
@@ -381,7 +457,26 @@
             var row = btn.closest ? btn.closest("tr") : null;
             if (!row) return;
 
-            if (btn.classList.contains("icon-save")) {
+            if (btn.classList.contains("inv-generate")) {
+                var barcodeInput = row.querySelector('[data-field="b"]');
+                if (!barcodeInput || barcodeInput.readOnly) return;
+                if (barcodeInput.value.trim()) {
+                    var replace = await showConfirm({
+                        title: "Replace this barcode?",
+                        message: "This item already has " + barcodeInput.value.trim() + ". Generate a new in-store barcode instead?",
+                        confirmText: "Yes, Generate"
+                    });
+                    if (!replace) return;
+                }
+                var code = generateBarcode();
+                if (!code) {
+                    flash("Could not find a free barcode. Try again.");
+                    return;
+                }
+                barcodeInput.value = code;
+                lockBarcodeInput(barcodeInput);
+                flash("Barcode " + code + " generated. It cannot be changed.");
+            } else if (btn.classList.contains("icon-save")) {
                 await commitRow(row);
             } else if (btn.classList.contains("inv-attach-remove")) {
                 clearAttached(row);
@@ -488,8 +583,8 @@
                 '<span class="inv-attach-name"></span>' +
                 '<button type="button" class="inv-attach-remove" hidden>Remove</button>' +
                 "</div></td>" +
-                '<td><input class="inv-input barcode-input" data-field="b" type="text" placeholder="Scan or type" /></td>' +
-                '<td><input class="inv-input" data-field="c" type="text" placeholder="Category" /></td>' +
+                "<td>" + barcodeCell("") + "</td>" +
+                '<td><input class="inv-input" data-field="c" type="text" list="inv-category-list" placeholder="Category" /></td>' +
                 '<td><input class="inv-input narrow" data-field="p" type="text" placeholder="0.00" /></td>' +
                 '<td><input class="inv-input narrow" data-field="s" type="number" min="0" value="0" /></td>' +
                 '<td><span class="badge badge-in">In stock</span></td>' +
