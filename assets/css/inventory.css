@@ -1266,7 +1266,7 @@ body {
 }
 .user-edit-card .inv-search,
 .user-edit-card .inv-input {
-    width: 100%;
+    width: 80%;
     margin: 0;
 }
 .user-edit-actions {
@@ -1284,7 +1284,6 @@ body {
 }
 .password-field input {
     width: 100%;
-    padding-right: 5px;
 }
 .password-toggle {
     position: absolute;
