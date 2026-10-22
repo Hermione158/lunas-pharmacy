@@ -1304,7 +1304,13 @@ body {
 
 /* Keep password fields aligned with other inputs in the accounts toolbar */
 .inv-toolbar .password-field {
-    flex: 1 1 260px;
+    flex: 1 1 200px;
     margin-left: 0;
-    max-width: 300px;
+    max-width: 280px;
+}
+
+/* Shrink the username field so both inputs fit without crowding the role dropdown */
+#accounts-list > .inv-search {
+    flex: 1 1 200px;
+    max-width: 280px;
 }
