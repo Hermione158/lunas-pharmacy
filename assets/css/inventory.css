@@ -767,7 +767,7 @@ body {
 }
 
 .inv-input.barcode-input {
-    max-width: 220px;
+    max-width: 300px;
     font-family: Consolas, "Courier New", monospace;
     font-size: 14px;
 }
@@ -834,7 +834,7 @@ body {
 .inv-stock-box {
     display: flex;
     align-items: center;
-    width: 100%;
+    width: 80%;
     max-width: 90px;
 }
 
