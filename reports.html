@@ -27,8 +27,8 @@
         </nav>
     </header>
 
-    <main class="inv-main">
-        <div class="inv-page-head">
+    <main class="inv-main has-page-nav">
+        <div class="inv-page-head" id="rep-summary">
             <div>
                 <h2>Gross Sales, Net Sales and Best Sellers</h2>
                 <p id="range-label">Every completed sale from the POS, summarised below.</p>
@@ -83,7 +83,7 @@
         </div>
 
         <div class="rep-charts">
-            <div class="inv-table-wrap rep-chart-card">
+            <div class="inv-table-wrap rep-chart-card" id="rep-over-time">
                 <h3 class="rep-heading">Sales Over Time</h3>
                 <p class="rep-chart-sub" id="rep-series-note">Net sales per bucket</p>
                 <div class="rep-chart" id="rep-chart"></div>
@@ -117,7 +117,7 @@
             <p id="rep-busy-empty" class="no-results" style="display:none;">No sales recorded yet.</p>
         </div>
 
-        <div class="inv-table-wrap">
+        <div class="inv-table-wrap" id="rep-dead-card">
             <h3 class="rep-heading">Dead Stock</h3>
             <p class="rep-chart-sub" id="rep-dead-note">Items that did not sell in this period.</p>
             <button type="button" id="rep-dead-toggle" class="btn btn-soft rep-dead-toggle" aria-expanded="false" aria-controls="rep-dead-body" style="display:none;">Show list</button>
@@ -140,7 +140,7 @@
             </div>
         </div>
 
-        <div class="inv-table-wrap">
+        <div class="inv-table-wrap" id="rep-running-low">
             <h3 class="rep-heading">Running Out Soon</h3>
             <p class="rep-chart-sub" id="rep-cover-note">Shelves with fewer than 20, or that empty within a month at the faster of the last 7 days and the last 30.</p>
             <div class="rep-search-row">
@@ -162,7 +162,7 @@
             <p id="rep-cover-filter-empty" class="no-results" style="display:none;">No shelf matches your search.</p>
         </div>
 
-        <div class="inv-table-wrap">
+        <div class="inv-table-wrap" id="rep-most-sold">
             <h3 class="rep-heading">Most Sold Items</h3>
             <table class="inv-table" id="rep-top-table">
                 <thead>
@@ -178,7 +178,7 @@
             <p id="rep-top-empty" class="no-results" style="display:none;">No sales recorded in this period.</p>
         </div>
 
-        <div class="inv-table-wrap">
+        <div class="inv-table-wrap" id="rep-transactions">
             <h3 class="rep-heading">Transactions</h3>
             <div class="rep-search-row">
                 <input type="text" class="inv-search" data-filter-table="rep-tx-table" placeholder="Search sale no., date, cashier or item..." aria-label="Search transactions" />
@@ -201,9 +201,20 @@
             <p id="rep-tx-empty" class="no-results" style="display:none;">No transactions in this period.</p>
             <p id="rep-tx-filter-empty" class="no-results" style="display:none;">No transaction matches your search.</p>
         </div>
+
+        <aside class="page-nav" aria-label="On this page">
+            <h3>On this page</h3>
+            <a href="#rep-summary" class="page-nav-link active">Summary</a>
+            <a href="#rep-over-time" class="page-nav-link">Sales Over Time</a>
+            <a href="#rep-dead-card" class="page-nav-link">Dead Stock</a>
+            <a href="#rep-running-low" class="page-nav-link">Running Out Soon</a>
+            <a href="#rep-most-sold" class="page-nav-link">Most Sold Items</a>
+            <a href="#rep-transactions" class="page-nav-link">Transactions</a>
+        </aside>
     </main>
 
     <script src="assets/js/api.js"></script>
+    <script src="assets/js/page-nav.js"></script>
     <script src="assets/js/reports.js"></script>
 </body>
 </html>

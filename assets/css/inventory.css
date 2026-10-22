@@ -1127,3 +1127,88 @@ body {
         white-space: normal !important;
     }
 }
+
+/* --- On this page: a sticky jump card for the long admin pages --- */
+.inv-main.has-page-nav {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 230px;
+    align-items: start;
+    column-gap: 20px;
+    row-gap: 20px;
+}
+
+.inv-main.has-page-nav > :not(.page-nav) {
+    grid-column: 1;
+}
+
+.inv-main.has-page-nav .page-nav {
+    grid-column: 2;
+    grid-row: 1 / span 40;
+    position: sticky;
+    top: 106px;
+}
+
+.page-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 14px;
+    border: 1px solid #eadfe3;
+    border-radius: 14px;
+    background: #ffffff;
+    box-shadow: 0 6px 18px rgba(56, 36, 73, 0.06);
+}
+
+.page-nav h3 {
+    margin: 2px 8px 8px;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    color: #8a6f95;
+}
+
+.page-nav-link {
+    padding: 9px 10px;
+    border-radius: 10px;
+    font-size: 13.5px;
+    font-weight: 600;
+    line-height: 1.35;
+    color: #4a3550;
+    text-decoration: none;
+}
+
+.page-nav-link:hover,
+.page-nav-link:focus-visible {
+    background: #f7edf2;
+    outline: none;
+}
+
+.page-nav-link.active {
+    background: #efe3f2;
+    color: #382449;
+    font-weight: 800;
+}
+
+.inv-main.has-page-nav [id] {
+    scroll-margin-top: 112px;
+}
+
+@media (max-width: 1100px) {
+    .inv-main.has-page-nav {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .inv-main.has-page-nav .page-nav {
+        order: -1;
+        position: static;
+        width: 100%;
+    }
+}
+
+@media print {
+    .page-nav {
+        display: none !important;
+    }
+}

@@ -25,7 +25,7 @@
         </nav>
     </header>
 
-    <main class="inv-main">
+    <main class="inv-main has-page-nav">
         <div class="inv-page-head">
             <div>
                 <h2>Edit Medicine Stock</h2>
@@ -47,7 +47,7 @@
             </div>
         </div>
 
-        <div class="inv-toolbar">
+        <div class="inv-toolbar" id="edit-list">
             <input type="text" id="inv-search" class="inv-search" placeholder="Search medicine or category..." aria-label="Search inventory" />
             <div class="inv-chips" id="inv-chips"></div>
             <div class="inv-chips" id="inv-status-chips" aria-label="Show items">
@@ -80,9 +80,16 @@
         </div>
 
         <datalist id="inv-category-list"></datalist>
+
+        <aside class="page-nav" aria-label="On this page">
+            <h3>On this page</h3>
+            <a href="#edit-list" class="page-nav-link active">Edit List</a>
+            <a href="#edit-list" class="page-nav-link" data-chip="#inv-status-chips .chip[data-status='archived']">Archived Items</a>
+        </aside>
     </main>
 
     <script src="assets/js/api.js"></script>
+    <script src="assets/js/page-nav.js"></script>
 <script src="assets/js/confirm.js"></script>
     <script src="assets/js/inventory.js"></script>
 </body>

@@ -26,7 +26,7 @@
         </nav>
     </header>
 
-    <main class="inv-main">
+    <main class="inv-main has-page-nav">
         <div class="inv-page-head">
             <div>
                 <h2>Staff Accounts</h2>
@@ -48,7 +48,7 @@
             </div>
         </div>
 
-        <div class="inv-toolbar">
+        <div class="inv-toolbar" id="accounts-list">
             <input type="text" id="new-username" class="inv-search" placeholder="Username" aria-label="New username" />
             <input type="password" id="new-password" class="inv-search" placeholder="Password (6+ characters)" aria-label="New password" />
             <select id="new-role" class="inv-input narrow" aria-label="Role">
@@ -78,9 +78,16 @@
                 <tbody></tbody>
             </table>
         </div>
+
+        <aside class="page-nav" aria-label="On this page">
+            <h3>On this page</h3>
+            <a href="#accounts-list" class="page-nav-link active">Accounts List</a>
+            <a href="#accounts-list" class="page-nav-link" data-chip="#user-status-chips .chip[data-status='archived']">Archived Accounts</a>
+        </aside>
     </main>
 
     <script src="assets/js/api.js"></script>
+    <script src="assets/js/page-nav.js"></script>
 <script src="assets/js/confirm.js"></script>
     <script src="assets/js/users.js"></script>
 </body>

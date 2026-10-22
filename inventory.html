@@ -27,7 +27,7 @@
         </nav>
     </header>
 
-    <main class="inv-main">
+    <main class="inv-main has-page-nav">
         <div class="inv-page-head">
             <div>
                 <h2>Medicine Stock</h2>
@@ -49,7 +49,7 @@
             </div>
         </div>
 
-        <div class="inv-toolbar">
+        <div class="inv-toolbar" id="current-inventory">
             <input type="text" id="inv-search" class="inv-search" placeholder="Search medicine or category..." aria-label="Search inventory" />
             <div class="inv-chips" id="inv-chips"></div>
             <button type="button" id="refresh-btn" class="btn btn-soft">Refresh</button>
@@ -73,7 +73,26 @@
             <p id="no-results" class="no-results" style="display:none;">No items match your search.</p>
         </div>
 
-        <div class="inv-table-wrap inv-log-wrap">
+        <div class="inv-table-wrap inv-log-wrap" id="manage-categories">
+            <div class="inv-log-head">
+                <h3>Categories</h3>
+                <span class="hint">Rename a category everywhere, merge it into another, or move its items to Uncategorized.</span>
+            </div>
+            <table class="inv-table" id="category-table">
+                <thead>
+                    <tr>
+                        <th>Category</th>
+                        <th>Items</th>
+                        <th>Rename to</th>
+                        <th style="text-align:right;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+            <p id="category-empty" class="no-results" style="display:none;">No categories yet.</p>
+        </div>
+
+        <div class="inv-table-wrap inv-log-wrap" id="stock-history">
             <div class="inv-log-head">
                 <h3>Stock Log</h3>
                 <input type="text" id="log-search" class="inv-search" placeholder="Search item, type or by..." aria-label="Search stock log" />
@@ -94,27 +113,16 @@
             <p id="log-empty" class="no-results" style="display:none;">No stock changes recorded yet.</p>
         </div>
 
-        <div class="inv-table-wrap inv-log-wrap">
-            <div class="inv-log-head">
-                <h3>Categories</h3>
-                <span class="hint">Rename a category everywhere, merge it into another, or move its items to Uncategorized.</span>
-            </div>
-            <table class="inv-table" id="category-table">
-                <thead>
-                    <tr>
-                        <th>Category</th>
-                        <th>Items</th>
-                        <th>Rename to</th>
-                        <th style="text-align:right;">Actions</th>
-                    </tr>
-                </thead>
-                <tbody></tbody>
-            </table>
-            <p id="category-empty" class="no-results" style="display:none;">No categories yet.</p>
-        </div>
+        <aside class="page-nav" aria-label="On this page">
+            <h3>On this page</h3>
+            <a href="#current-inventory" class="page-nav-link active">Current Inventory</a>
+            <a href="#manage-categories" class="page-nav-link">Manage Categories</a>
+            <a href="#stock-history" class="page-nav-link">Stock History</a>
+        </aside>
     </main>
 
     <script src="assets/js/api.js"></script>
+    <script src="assets/js/page-nav.js"></script>
 <script src="assets/js/confirm.js"></script>
     <script src="assets/js/inventory.js"></script>
 </body>
