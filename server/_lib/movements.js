@@ -24,4 +24,4 @@ async function recordMovement(db, entry) {
     }
 }
 
-module.exports = { recordMovement };
+module.exports = { isMissingTable, recordMovement };

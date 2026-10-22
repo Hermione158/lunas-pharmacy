@@ -4,6 +4,7 @@
 
 const { getPool } = require("./_lib/db");
 const { requireAuth, requireAdmin } = require("./_lib/auth");
+const { recordMovement } = require("./_lib/movements");
 const { send, readBody, serverError, round2, txNo } = require("./_lib/util");
 
 const RANGES = ["today", "week", "month", "day", "all"];
@@ -457,6 +458,13 @@ async function createSale(req, res, session) {
                 [saleId, it.id, it.qty, it.price, it.total]
             );
             await conn.query("UPDATE products SET stock = stock - ? WHERE id = ?", [it.qty, it.id]);
+            await recordMovement(conn, {
+                productId: it.id,
+                name: it.name,
+                delta: -it.qty,
+                type: "sale",
+                user: session.username
+            });
         }
 
         await conn.commit();

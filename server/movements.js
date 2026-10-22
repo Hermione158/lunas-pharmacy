@@ -4,6 +4,7 @@
 const { getPool } = require("./_lib/db");
 const { requireAdmin } = require("./_lib/auth");
 const { send, serverError } = require("./_lib/util");
+const { isMissingTable } = require("./_lib/movements");
 
 const DEFAULT_LIMIT = 100;
 const MAX_LIMIT = 500;
@@ -42,6 +43,9 @@ module.exports = async function handler(req, res) {
         if (!requireAdmin(req, res)) return;
         return await listMovements(req, res);
     } catch (err) {
+        // Before the SQL migration runs there is no history to read: show an
+        // empty log instead of an error the owner cannot act on.
+        if (isMissingTable(err)) return send(res, 200, { movements: [] });
         return serverError(res, err);
     }
 };

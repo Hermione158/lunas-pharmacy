@@ -204,7 +204,7 @@
                     "<td>" + barcodeCell(p.barcode) + "</td>" +
                     '<td><input class="inv-input" data-field="c" type="text" list="inv-category-list" value="' + esc(p.category) + '" /></td>' +
                     "<td>" + priceCell(p.price) + "</td>" +
-                    '<td><input class="inv-input narrow" data-field="s" type="number" min="0" value="' + p.stock + '" /></td>' +
+                    '<td><div class="inv-stock-box"><input class="inv-input narrow" data-field="s" type="number" min="0" value="' + p.stock + '" /></div></td>' +
                     '<td><span class="badge ' + st.cls + '">' + st.label + "</span>" +
                     (archived ? ' <span class="badge badge-archived">Archived</span>' : "") + "</td>" +
                     '<td><div class="row-actions">' +
@@ -640,7 +640,7 @@
                 "<td>" + barcodeCell("") + "</td>" +
                 '<td><input class="inv-input" data-field="c" type="text" list="inv-category-list" placeholder="Category" /></td>' +
                 "<td>" + priceCell("") + "</td>" +
-                '<td><input class="inv-input narrow" data-field="s" type="number" min="0" value="0" /></td>' +
+                '<td><div class="inv-stock-box"><input class="inv-input narrow" data-field="s" type="number" min="0" value="0" /></div></td>' +
                 '<td><span class="badge badge-in">In stock</span></td>' +
                 '<td><div class="row-actions">' +
                 '<button type="button" class="icon-btn icon-save">Save</button>' +
@@ -774,7 +774,8 @@
         adjust: "Adjustment",
         bulk: "Bulk edit",
         archive: "Archived",
-        restore: "Restored"
+        restore: "Restored",
+        sale: "Sale"
     };
 
     function movementLabel(type) {
