@@ -1242,14 +1242,36 @@ body {
 .user-edit-card {
     background: #ffffff;
     border-radius: 18px;
-    padding: 24px;
-    width: min(420px, 92vw);
+    padding: 28px 24px;
+    width: min(440px, 92vw);
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 14px;
     box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
 }
 .user-edit-card h3 {
-    margin: 0 0 4px;
+    margin: 0 0 8px;
     color: #382449;
+    font-size: 20px;
+}
+.user-edit-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+.user-edit-field label {
+    font-size: 13px;
+    font-weight: 700;
+    color: #7a2a3d;
+}
+.user-edit-card .inv-search,
+.user-edit-card .inv-input {
+    width: 100%;
+    margin: 0;
+}
+.user-edit-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 6px;
 }

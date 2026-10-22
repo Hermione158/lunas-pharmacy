@@ -82,15 +82,24 @@
         <div class="user-edit-overlay" id="user-edit-overlay" hidden>
             <div class="user-edit-card">
                 <h3>Edit Account</h3>
-                <input type="text" id="edit-username" class="inv-search" placeholder="Username" aria-label="Username" />
-                <select id="edit-role" class="inv-input narrow" aria-label="Role">
-                    <option value="cashier">Cashier</option>
-                    <option value="admin">Administrator</option>
-                </select>
-                <input type="password" id="edit-password" class="inv-search" placeholder="New password (leave blank to keep)" aria-label="New password" />
-                <div class="row-actions">
-                    <button type="button" id="edit-save" class="btn btn-primary">Save</button>
+                <div class="user-edit-field">
+                    <label for="edit-username">Username</label>
+                    <input type="text" id="edit-username" class="inv-search" placeholder="Username" aria-label="Username" />
+                </div>
+                <div class="user-edit-field">
+                    <label for="edit-role">Role</label>
+                    <select id="edit-role" class="inv-input" aria-label="Role">
+                        <option value="cashier">Cashier</option>
+                        <option value="admin">Administrator</option>
+                    </select>
+                </div>
+                <div class="user-edit-field">
+                    <label for="edit-password">New password</label>
+                    <input type="password" id="edit-password" class="inv-search" placeholder="Leave blank to keep current" aria-label="New password" />
+                </div>
+                <div class="user-edit-actions">
                     <button type="button" id="edit-cancel" class="btn btn-soft">Cancel</button>
+                    <button type="button" id="edit-save" class="btn btn-primary">Save</button>
                 </div>
                 <span class="hint" id="edit-hint"></span>
             </div>
