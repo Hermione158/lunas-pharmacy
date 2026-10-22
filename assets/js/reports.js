@@ -178,6 +178,18 @@
         return "—";
     }
 
+    // What one receipt was for: "Biogesic 500mg ×2, Alnix 10mg". The quantity
+    // is only spelled out when it is more than one, so single buys stay short.
+    function itemsLabel(sale) {
+        var list = (Array.isArray(sale.items) ? sale.items : []).map(function (item) {
+            var name = String(item.name || "").trim();
+            if (!name) return "";
+            var qty = Number(item.qty) || 0;
+            return qty > 1 ? name + " ×" + qty : name;
+        }).filter(Boolean);
+        return list.length ? list.join(", ") : "—";
+    }
+
     function renderTransactions(stats) {
         var tbody = document.querySelector("#rep-tx-table tbody");
 
@@ -186,7 +198,7 @@
                 "<td>" + esc(sale.txNo) + "</td>" +
                 "<td>" + esc(formatDate(sale.date)) + "</td>" +
                 "<td>" + esc(sale.cashier) + "</td>" +
-                "<td>" + sale.units + "</td>" +
+                "<td>" + esc(itemsLabel(sale)) + "</td>" +
                 "<td>" + currency(sale.gross) + "</td>" +
                 "<td>" + esc(discountLabel(sale)) + "</td>" +
                 "<td>" + currency(sale.net) + "</td>" +
@@ -685,7 +697,36 @@
         renderBusy(stats);
         renderDeadStock(stats);
         renderRunningOut(stats);
+        applyTableFilters();
     }
+
+    // --- Search boxes on the tables ---
+    // Each box filters the table it names as the admin types, so a sale or a
+    // record can be found by any word that appears in its row.
+    function applyTableFilters() {
+        document.querySelectorAll("input[data-filter-table]").forEach(function (input) {
+            var table = document.getElementById(input.getAttribute("data-filter-table"));
+            var tbody = table ? table.querySelector("tbody") : null;
+            if (!tbody) return;
+
+            var term = input.value.trim().toLowerCase();
+            var rows = Array.prototype.slice.call(tbody.querySelectorAll("tr"));
+            var shown = 0;
+
+            rows.forEach(function (row) {
+                var show = !term || row.textContent.toLowerCase().indexOf(term) !== -1;
+                row.style.display = show ? "" : "none";
+                if (show) shown++;
+            });
+
+            var empty = document.getElementById(input.getAttribute("data-filter-table").replace(/-table$/, "") + "-filter-empty");
+            if (empty) empty.style.display = term && rows.length && !shown ? "block" : "none";
+        });
+    }
+
+    document.querySelectorAll("input[data-filter-table]").forEach(function (input) {
+        input.addEventListener("input", applyTableFilters);
+    });
 
     document.getElementById("rep-ranges").querySelectorAll(".chip").forEach(function (btn) {
         btn.addEventListener("click", function () {

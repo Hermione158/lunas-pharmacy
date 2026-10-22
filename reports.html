@@ -116,6 +116,9 @@
         <div class="inv-table-wrap">
             <h3 class="rep-heading">Dead Stock</h3>
             <p class="rep-chart-sub" id="rep-dead-note">Items that did not sell in this period.</p>
+            <div class="rep-search-row">
+                <input type="text" class="inv-search" data-filter-table="rep-dead-table" placeholder="Search item or category..." aria-label="Search dead stock" />
+            </div>
             <table class="inv-table" id="rep-dead-table">
                 <thead>
                     <tr>
@@ -127,11 +130,15 @@
                 <tbody></tbody>
             </table>
             <p id="rep-dead-empty" class="no-results" style="display:none;">Nothing is gathering dust.</p>
+            <p id="rep-dead-filter-empty" class="no-results" style="display:none;">No dead stock matches your search.</p>
         </div>
 
         <div class="inv-table-wrap">
             <h3 class="rep-heading">Running Out Soon</h3>
             <p class="rep-chart-sub" id="rep-cover-note">Shelves with fewer than 20, or that empty within a month at the faster of the last 7 days and the last 30.</p>
+            <div class="rep-search-row">
+                <input type="text" class="inv-search" data-filter-table="rep-cover-table" placeholder="Search item, stock or status..." aria-label="Search shelves running out" />
+            </div>
             <table class="inv-table" id="rep-cover-table">
                 <thead>
                     <tr>
@@ -145,10 +152,14 @@
                 <tbody></tbody>
             </table>
             <p id="rep-cover-empty" class="no-results" style="display:none;">No shelf is running low.</p>
+            <p id="rep-cover-filter-empty" class="no-results" style="display:none;">No shelf matches your search.</p>
         </div>
 
         <div class="inv-table-wrap">
             <h3 class="rep-heading">Most Sold Items</h3>
+            <div class="rep-search-row">
+                <input type="text" class="inv-search" data-filter-table="rep-top-table" placeholder="Search item..." aria-label="Search most sold items" />
+            </div>
             <table class="inv-table" id="rep-top-table">
                 <thead>
                     <tr>
@@ -161,10 +172,14 @@
                 <tbody></tbody>
             </table>
             <p id="rep-top-empty" class="no-results" style="display:none;">No sales recorded in this period.</p>
+            <p id="rep-top-filter-empty" class="no-results" style="display:none;">No item matches your search.</p>
         </div>
 
         <div class="inv-table-wrap">
             <h3 class="rep-heading">Transactions</h3>
+            <div class="rep-search-row">
+                <input type="text" class="inv-search" data-filter-table="rep-tx-table" placeholder="Search sale no., date, cashier or item..." aria-label="Search transactions" />
+            </div>
             <table class="inv-table" id="rep-tx-table">
                 <thead>
                     <tr>
@@ -180,6 +195,7 @@
                 <tbody></tbody>
             </table>
             <p id="rep-tx-empty" class="no-results" style="display:none;">No transactions in this period.</p>
+            <p id="rep-tx-filter-empty" class="no-results" style="display:none;">No transaction matches your search.</p>
         </div>
     </main>
 

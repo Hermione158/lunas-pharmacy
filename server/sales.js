@@ -261,6 +261,28 @@ async function listSales(req, res) {
         params
     );
 
+    // What each receipt was for, so the report can name every item that was
+    // bought. This is an extra like the analysis below: a failure here leaves
+    // the names empty but never takes the transaction list down.
+    try {
+        if (rows.length) {
+            const ids = rows.map(function (r) { return r.id; });
+            const [itemRows] = await pool.query(
+                "SELECT si.sale_id, si.qty, p.name FROM sale_items si JOIN products p ON p.id = si.product_id " +
+                "WHERE si.sale_id IN (" + ids.map(function () { return "?"; }).join(", ") + ") ORDER BY si.id",
+                ids
+            );
+            const bySale = {};
+            itemRows.forEach(function (r) {
+                const list = bySale[r.sale_id] || (bySale[r.sale_id] = []);
+                list.push({ name: String(r.name), qty: Number(r.qty) });
+            });
+            rows.forEach(function (r) { r.items = bySale[r.id] || []; });
+        }
+    } catch (err) {
+        // The list still goes out; the item cells simply read empty.
+    }
+
     // The extra analysis. Each one is on its own, so a failure in one of
     // them never takes the whole report down with it.
     let series = [];
@@ -315,6 +337,7 @@ async function listSales(req, res) {
                 date: new Date(r.created_at).toISOString(),
                 cashier: r.username,
                 units: Number(r.units),
+                items: r.items || [],
                 gross: round2(Number(r.gross)),
                 discount: round2(Number(r.discount)),
                 discountPct: round2(Number(r.discount_pct) || 0),
