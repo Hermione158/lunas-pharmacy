@@ -306,6 +306,7 @@ body {
 .rep-charts {
     display: grid;
     grid-template-columns: 1.55fr 1fr;
+    align-items: start;
     gap: 18px;
     margin-bottom: 18px;
 }
