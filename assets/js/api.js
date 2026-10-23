@@ -123,9 +123,6 @@
         saveProducts: function (items) {
             return request("/api/products/bulk", { method: "POST", body: { items: items } });
         },
-        importSampleCatalog: function () {
-            return request("/api/products/import", { method: "POST" });
-        },
         getCategories: function () {
             return request("/api/categories").then(function (data) { return data.categories; });
         },

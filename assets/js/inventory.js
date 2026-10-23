@@ -718,38 +718,6 @@
         });
     }
 
-    // --- Optional: load the sample medicine catalog ---
-    // It only fills in names, categories and prices at 0 stock, so nothing can be
-    // sold until real stock is added. Items already in the inventory are kept.
-    var importBtn = document.getElementById("import-catalog");
-    if (importBtn && table) {
-        importBtn.addEventListener("click", async function () {
-            var goAhead = await showConfirm({
-                title: "Import the sample catalog?",
-                message: "Items you already have are kept, and every imported item starts at 0 stock, so nothing can be sold until you add stock.",
-                confirmText: "Yes, Import"
-            });
-            if (!goAhead) return;
-
-            var label = importBtn.textContent;
-            importBtn.disabled = true;
-            importBtn.textContent = "Importing...";
-
-            try {
-                var res = await Api.importSampleCatalog();
-                await reload();
-                flash(res.imported
-                    ? "Imported " + res.imported + " item(s) at 0 stock (" + res.skipped + " already in the inventory). Add your stock next."
-                    : "Nothing to import: all " + res.total + " sample items are already in your inventory.");
-            } catch (err) {
-                if (!handleAuthError(err)) flash(err.message);
-            } finally {
-                importBtn.disabled = false;
-                importBtn.textContent = label;
-            }
-        });
-    }
-
     // --- Export the rows on screen to a CSV file ---
     var exportBtn = document.getElementById("export-btn");
     if (exportBtn && table) {
