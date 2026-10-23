@@ -18,8 +18,12 @@ function parseLimit(value) {
 async function listMovements(req, res) {
     const limit = parseLimit(req.query && req.query.limit);
     const [rows] = await getPool().query(
-        "SELECT id, product_id, product_name, delta, type, recorded_by, created_at " +
-        "FROM stock_movements ORDER BY id DESC LIMIT ?",
+        "SELECT m.id, m.product_id, p.name AS product_name, m.delta, m.type, " +
+        "u.username AS recorded_by, m.created_at " +
+        "FROM stock_movements m " +
+        "LEFT JOIN products p ON p.id = m.product_id " +
+        "LEFT JOIN users u ON u.id = m.user_id " +
+        "ORDER BY m.id DESC LIMIT ?",
         [limit]
     );
     send(res, 200, {
@@ -27,10 +31,10 @@ async function listMovements(req, res) {
             return {
                 id: row.id,
                 product_id: row.product_id,
-                product_name: row.product_name,
+                product_name: row.product_name == null ? "Deleted item" : row.product_name,
                 delta: Number(row.delta) || 0,
                 type: row.type,
-                recorded_by: row.recorded_by,
+                recorded_by: row.recorded_by == null ? "Unknown user" : row.recorded_by,
                 created_at: new Date(row.created_at).toISOString()
             };
         })

@@ -151,10 +151,9 @@ async function saveAll(req, res, session) {
                 );
                 await recordMovement(connection, {
                     productId: inserted.insertId,
-                    name: item.name,
                     delta: item.stock,
                     type: "added",
-                    user: session.username
+                    userId: session.uid
                 });
                 added++;
                 continue;
@@ -178,10 +177,9 @@ async function saveAll(req, res, session) {
             if (delta !== 0) {
                 await recordMovement(connection, {
                     productId: item.id,
-                    name: item.name,
                     delta: delta,
                     type: "bulk",
-                    user: session.username
+                    userId: session.uid
                 });
             }
             updated++;

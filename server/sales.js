@@ -10,6 +10,12 @@ const { send, readBody, serverError, round2, txNo } = require("./_lib/util");
 const RANGES = ["today", "week", "month", "day", "all"];
 const DAY_MS = 24 * 60 * 60 * 1000;
 
+// Gross is no longer a sales column: it is always the sum of the receipt's
+// line items. The query below aliases the sale as "s" so this fragment can be
+// reused by the totals and chart queries.
+const SALE_GROSS =
+    "(SELECT COALESCE(SUM(si.qty * si.price), 0) FROM sale_items si WHERE si.sale_id = s.id)";
+
 function parseRange(req) {
     const range = RANGES.includes(String(req.query.range).toLowerCase())
         ? String(req.query.range).toLowerCase()
@@ -69,10 +75,13 @@ function bucketExpression(grain, tz) {
 async function salesSeries(pool, grain, tz, where, params) {
     const bucket = bucketExpression(grain, tz);
     const [rows] = await pool.query(
-        "SELECT " + bucket + " AS bucket, COALESCE(SUM(s.gross), 0) AS gross, " +
-        "COALESCE(SUM(s.discount), 0) AS discount, COALESCE(SUM(s.net), 0) AS net, " +
-        "COUNT(*) AS transactions FROM sales s " + where +
-        " GROUP BY bucket ORDER BY bucket LIMIT 240",
+        "SELECT t.bucket, COALESCE(SUM(t.gross), 0) AS gross, " +
+        "COALESCE(SUM(t.discount), 0) AS discount, " +
+        "COALESCE(SUM(t.gross - t.discount), 0) AS net, " +
+        "COUNT(*) AS transactions FROM (" +
+        "SELECT " + bucket + " AS bucket, s.id, s.discount, " + SALE_GROSS + " AS gross " +
+        "FROM sales s " + where +
+        ") t GROUP BY t.bucket ORDER BY t.bucket LIMIT 240",
         params
     );
     return rows.map(function (r) {
@@ -114,8 +123,10 @@ async function previousPeriod(pool, from, to) {
     const params = [from, to];
 
     const [[totals]] = await pool.query(
-        "SELECT COALESCE(SUM(s.gross), 0) AS gross, COALESCE(SUM(s.discount), 0) AS discount, " +
-        "COALESCE(SUM(s.net), 0) AS net, COUNT(*) AS transactions FROM sales s " + where,
+        "SELECT COALESCE(SUM(t.gross), 0) AS gross, COALESCE(SUM(t.discount), 0) AS discount, " +
+        "COALESCE(SUM(t.gross - t.discount), 0) AS net, COUNT(*) AS transactions FROM (" +
+        "SELECT s.id, s.discount, " + SALE_GROSS + " AS gross FROM sales s " + where +
+        ") t",
         params
     );
 
@@ -141,14 +152,20 @@ async function busyPeriods(pool, tz) {
     const shifted = "CONVERT_TZ(s.created_at, '+00:00', '" + tz + "')";
 
     const [hours] = await pool.query(
-        "SELECT HOUR(" + shifted + ") AS bucket, COALESCE(SUM(s.net), 0) AS net, " +
-        "COUNT(*) AS transactions FROM sales s GROUP BY bucket ORDER BY bucket",
+        "SELECT t.bucket, COALESCE(SUM(t.gross - t.discount), 0) AS net, " +
+        "COUNT(*) AS transactions FROM (" +
+        "SELECT HOUR(" + shifted + ") AS bucket, s.id, s.discount, " + SALE_GROSS + " AS gross " +
+        "FROM sales s" +
+        ") t GROUP BY t.bucket ORDER BY t.bucket",
         []
     );
 
     const [weekdays] = await pool.query(
-        "SELECT DAYOFWEEK(" + shifted + ") AS bucket, COALESCE(SUM(s.net), 0) AS net, " +
-        "COUNT(*) AS transactions FROM sales s GROUP BY bucket ORDER BY bucket",
+        "SELECT t.bucket, COALESCE(SUM(t.gross - t.discount), 0) AS net, " +
+        "COUNT(*) AS transactions FROM (" +
+        "SELECT DAYOFWEEK(" + shifted + ") AS bucket, s.id, s.discount, " + SALE_GROSS + " AS gross " +
+        "FROM sales s" +
+        ") t GROUP BY t.bucket ORDER BY t.bucket",
         []
     );
 
@@ -261,10 +278,12 @@ async function listSales(req, res) {
     const params = from ? (to ? [from, to] : [from]) : [];
 
     const [[totals]] = await pool.query(
-        "SELECT COALESCE(SUM(s.gross), 0) AS gross, COALESCE(SUM(s.discount), 0) AS discount, " +
-        "COALESCE(SUM(s.net), 0) AS net, COUNT(*) AS transactions, " +
-        "COALESCE(SUM(CASE WHEN s.discount > 0 THEN 1 ELSE 0 END), 0) AS discounted " +
-        "FROM sales s " + where,
+        "SELECT COALESCE(SUM(t.gross), 0) AS gross, COALESCE(SUM(t.discount), 0) AS discount, " +
+        "COALESCE(SUM(t.gross - t.discount), 0) AS net, COUNT(*) AS transactions, " +
+        "COALESCE(SUM(CASE WHEN t.discount > 0 THEN 1 ELSE 0 END), 0) AS discounted " +
+        "FROM (" +
+        "SELECT s.id, s.discount, " + SALE_GROSS + " AS gross FROM sales s " + where +
+        ") t",
         params
     );
 
@@ -282,7 +301,7 @@ async function listSales(req, res) {
     );
 
     const [rows] = await pool.query(
-        "SELECT s.id, s.gross, s.discount, s.net, s.discount_pct, s.created_at, u.username, " +
+        "SELECT s.id, " + SALE_GROSS + " AS gross, s.discount, s.discount_pct, s.created_at, u.username, " +
         "(SELECT COALESCE(SUM(si.qty), 0) FROM sale_items si WHERE si.sale_id = s.id) AS units " +
         "FROM sales s JOIN users u ON u.id = s.user_id " + where + " ORDER BY s.id DESC LIMIT 200",
         params
@@ -368,7 +387,7 @@ async function listSales(req, res) {
                 gross: round2(Number(r.gross)),
                 discount: round2(Number(r.discount)),
                 discountPct: round2(Number(r.discount_pct) || 0),
-                net: round2(Number(r.net))
+                net: round2(Number(r.gross) - Number(r.discount))
             };
         })
     });
@@ -457,8 +476,8 @@ async function createSale(req, res, session) {
         const net = round2(gross - discount);
 
         const [saleResult] = await conn.query(
-            "INSERT INTO sales (user_id, gross, discount, net, discount_pct) VALUES (?, ?, ?, ?, ?)",
-            [session.uid, gross, discount, net, discountPct]
+            "INSERT INTO sales (user_id, discount, discount_pct) VALUES (?, ?, ?)",
+            [session.uid, discount, discountPct]
         );
         const saleId = saleResult.insertId;
 
@@ -477,10 +496,9 @@ async function createSale(req, res, session) {
             await conn.query("UPDATE products SET stock = stock - ? WHERE id = ?", [it.qty, it.id]);
             await recordMovement(conn, {
                 productId: it.id,
-                name: it.name,
                 delta: -it.qty,
                 type: "sale",
-                user: session.username
+                userId: session.uid
             });
         }
 

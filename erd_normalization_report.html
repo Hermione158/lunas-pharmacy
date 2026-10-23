@@ -220,10 +220,10 @@
     <span class="badge">Visual Layout</span>
   </div>
 
-  <p>The diagram below displays the 5 core relational entities, their primary keys (PK), foreign keys (FK), attributes, and exact cardinalities.</p>
+  <p>The diagram below displays the 6 core relational entities, their primary keys (PK), foreign keys (FK), attributes, and exact cardinalities.</p>
 
   <div class="diagram-container">
-    <svg viewBox="0 0 850 480" width="100%" height="450" xmlns="http://www.w3.org/2000/svg">
+    <svg viewBox="0 0 870 520" width="100%" height="500" xmlns="http://www.w3.org/2000/svg">
       <defs>
         <linearGradient id="headerGrad" x1="0" y1="0" x2="1" y2="0">
           <stop offset="0%" stop-color="#382449"/>
@@ -269,8 +269,8 @@
       </g>
 
       <!-- SALES TABLE -->
-      <g transform="translate(310, 30)">
-        <rect width="210" height="175" rx="8" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5" filter="drop-shadow(0 2px 4px rgba(0,0,0,0.06))"/>
+      <g transform="translate(290, 30)">
+        <rect width="210" height="145" rx="8" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5" filter="drop-shadow(0 2px 4px rgba(0,0,0,0.06))"/>
         <rect width="210" height="28" rx="8" fill="url(#salesGrad)"/>
         <rect y="20" width="210" height="8" fill="url(#salesGrad)"/>
         <text x="10" y="19" fill="#ffcad6" font-weight="bold" font-size="12">sales</text>
@@ -283,126 +283,143 @@
         <text x="12" y="68" font-size="11" font-weight="bold" fill="#1e40af">🔗 user_id</text>
         <text x="198" y="68" font-size="10" fill="#1e40af" font-weight="bold" text-anchor="end">INT (FK)</text>
 
-        <text x="12" y="89" font-size="11" fill="#1e293b">gross</text>
+        <text x="12" y="89" font-size="11" fill="#1e293b">discount</text>
         <text x="198" y="89" font-size="10" fill="#64748b" text-anchor="end">DECIMAL</text>
 
-        <text x="12" y="110" font-size="11" fill="#1e293b">discount</text>
-        <text x="198" y="110" font-size="10" fill="#64748b" text-anchor="end">DECIMAL</text>
+        <text x="12" y="110" font-size="11" fill="#1e293b">discount_pct</text>
+        <text x="198" y="110" font-size="10" fill="#64748b" text-anchor="end">DECIMAL (5,2)</text>
 
-        <text x="12" y="131" font-size="11" fill="#1e293b">discount_pct</text>
-        <text x="198" y="131" font-size="10" fill="#64748b" text-anchor="end">DECIMAL (5,2)</text>
-
-        <text x="12" y="152" font-size="11" font-weight="bold" fill="#047857">net</text>
-        <text x="198" y="152" font-size="10" fill="#047857" font-weight="bold" text-anchor="end">DECIMAL</text>
-
-        <text x="12" y="170" font-size="10" fill="#94a3b8">created_at</text>
-        <text x="198" y="170" font-size="10" fill="#94a3b8" text-anchor="end">TIMESTAMP</text>
+        <text x="12" y="131" font-size="10" fill="#94a3b8">created_at</text>
+        <text x="198" y="131" font-size="10" fill="#94a3b8" text-anchor="end">TIMESTAMP</text>
       </g>
 
       <!-- SALE_ITEMS TABLE -->
-      <g transform="translate(620, 30)">
-        <rect width="200" height="160" rx="8" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5" filter="drop-shadow(0 2px 4px rgba(0,0,0,0.06))"/>
-        <rect width="200" height="28" rx="8" fill="url(#salesGrad)"/>
-        <rect y="20" width="200" height="8" fill="url(#salesGrad)"/>
+      <g transform="translate(580, 30)">
+        <rect width="220" height="145" rx="8" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5" filter="drop-shadow(0 2px 4px rgba(0,0,0,0.06))"/>
+        <rect width="220" height="28" rx="8" fill="url(#salesGrad)"/>
+        <rect y="20" width="220" height="8" fill="url(#salesGrad)"/>
         <text x="10" y="19" fill="#ffcad6" font-weight="bold" font-size="12">sale_items</text>
-        <text x="190" y="18" fill="#fbcfe8" font-size="10" text-anchor="end">Line Items</text>
+        <text x="210" y="18" fill="#fbcfe8" font-size="10" text-anchor="end">Line Items</text>
 
         <text x="12" y="47" font-size="11" font-weight="bold" fill="#6b21a8">🔑 id</text>
-        <text x="188" y="47" font-size="10" fill="#64748b" text-anchor="end">INT (PK)</text>
+        <text x="208" y="47" font-size="10" fill="#64748b" text-anchor="end">INT (PK)</text>
 
-        <rect x="0" y="53" width="200" height="20" fill="#fdf2f8"/>
+        <rect x="0" y="53" width="220" height="20" fill="#fdf2f8"/>
         <text x="12" y="68" font-size="11" font-weight="bold" fill="#be185d">🔗 sale_id</text>
-        <text x="188" y="68" font-size="10" fill="#be185d" font-weight="bold" text-anchor="end">INT (FK)</text>
+        <text x="208" y="68" font-size="10" fill="#be185d" font-weight="bold" text-anchor="end">INT (FK)</text>
 
         <text x="12" y="89" font-size="11" font-weight="bold" fill="#1e40af">🔗 product_id</text>
-        <text x="188" y="89" font-size="10" fill="#1e40af" font-weight="bold" text-anchor="end">INT (FK)</text>
+        <text x="208" y="89" font-size="10" fill="#1e40af" font-weight="bold" text-anchor="end">INT (FK)</text>
 
         <text x="12" y="110" font-size="11" fill="#1e293b">qty</text>
-        <text x="188" y="110" font-size="10" fill="#64748b" text-anchor="end">INT</text>
+        <text x="208" y="110" font-size="10" fill="#64748b" text-anchor="end">INT</text>
 
         <text x="12" y="131" font-size="11" fill="#1e293b">price (snapshot)</text>
-        <text x="188" y="131" font-size="10" fill="#64748b" text-anchor="end">DECIMAL</text>
+        <text x="208" y="131" font-size="10" fill="#64748b" text-anchor="end">DECIMAL</text>
+      </g>
 
-        <text x="12" y="152" font-size="11" font-weight="bold" fill="#1e293b">total</text>
-        <text x="188" y="152" font-size="10" fill="#64748b" text-anchor="end">DECIMAL</text>
+      <!-- CATEGORIES TABLE -->
+      <g transform="translate(30, 260)">
+        <rect width="180" height="90" rx="8" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5" filter="drop-shadow(0 2px 4px rgba(0,0,0,0.06))"/>
+        <rect width="180" height="28" rx="8" fill="url(#headerGrad)"/>
+        <rect y="20" width="180" height="8" fill="url(#headerGrad)"/>
+        <text x="10" y="19" fill="#ffcad6" font-weight="bold" font-size="12">categories</text>
+        <text x="170" y="18" fill="#e2e8f0" font-size="10" text-anchor="end">Groups</text>
+
+        <text x="12" y="47" font-size="11" font-weight="bold" fill="#6b21a8">🔑 id</text>
+        <text x="168" y="47" font-size="10" fill="#64748b" text-anchor="end">INT (PK)</text>
+
+        <text x="12" y="68" font-size="11" fill="#1e293b">name</text>
+        <text x="168" y="68" font-size="10" fill="#92400e" font-weight="bold" text-anchor="end">VARCHAR (UK)</text>
       </g>
 
       <!-- PRODUCTS TABLE -->
-      <g transform="translate(560, 260)">
-        <rect width="250" height="195" rx="8" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5" filter="drop-shadow(0 2px 4px rgba(0,0,0,0.06))"/>
-        <rect width="250" height="28" rx="8" fill="url(#headerGrad)"/>
-        <rect y="20" width="250" height="8" fill="url(#headerGrad)"/>
+      <g transform="translate(280, 250)">
+        <rect width="260" height="230" rx="8" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5" filter="drop-shadow(0 2px 4px rgba(0,0,0,0.06))"/>
+        <rect width="260" height="28" rx="8" fill="url(#headerGrad)"/>
+        <rect y="20" width="260" height="8" fill="url(#headerGrad)"/>
         <text x="10" y="19" fill="#ffcad6" font-weight="bold" font-size="12">products</text>
-        <text x="240" y="18" fill="#e2e8f0" font-size="10" text-anchor="end">Catalog &amp; Inventory</text>
+        <text x="250" y="18" fill="#e2e8f0" font-size="10" text-anchor="end">Catalog &amp; Inventory</text>
 
         <text x="12" y="47" font-size="11" font-weight="bold" fill="#6b21a8">🔑 id</text>
-        <text x="238" y="47" font-size="10" fill="#6b21a8" font-weight="bold" text-anchor="end">INT (PK)</text>
+        <text x="248" y="47" font-size="10" fill="#6b21a8" font-weight="bold" text-anchor="end">INT (PK)</text>
 
         <text x="12" y="68" font-size="11" fill="#1e293b">name</text>
-        <text x="238" y="68" font-size="10" fill="#92400e" font-weight="bold" text-anchor="end">VARCHAR (UK)</text>
+        <text x="248" y="68" font-size="10" fill="#92400e" font-weight="bold" text-anchor="end">VARCHAR (UK)</text>
 
         <text x="12" y="89" font-size="11" fill="#1e293b">barcode</text>
-        <text x="238" y="89" font-size="10" fill="#92400e" font-weight="bold" text-anchor="end">VARCHAR (UK)</text>
+        <text x="248" y="89" font-size="10" fill="#92400e" font-weight="bold" text-anchor="end">VARCHAR (UK)</text>
 
         <text x="12" y="110" font-size="11" fill="#64748b">image</text>
-        <text x="238" y="110" font-size="10" fill="#64748b" text-anchor="end">MEDIUMTEXT</text>
+        <text x="248" y="110" font-size="10" fill="#64748b" text-anchor="end">MEDIUMTEXT</text>
 
         <text x="12" y="131" font-size="11" fill="#1e293b">category</text>
-        <text x="238" y="131" font-size="10" fill="#64748b" text-anchor="end">VARCHAR</text>
+        <text x="248" y="131" font-size="10" fill="#64748b" text-anchor="end">VARCHAR (legacy)</text>
 
-        <text x="12" y="152" font-size="11" fill="#1e293b">price</text>
-        <text x="238" y="152" font-size="10" fill="#64748b" text-anchor="end">DECIMAL (10,2)</text>
+        <text x="12" y="152" font-size="11" font-weight="bold" fill="#1e40af">🔗 category_id</text>
+        <text x="248" y="152" font-size="10" fill="#1e40af" font-weight="bold" text-anchor="end">INT (FK)</text>
 
-        <text x="12" y="173" font-size="11" font-weight="bold" fill="#047857">stock</text>
-        <text x="238" y="173" font-size="10" fill="#047857" font-weight="bold" text-anchor="end">INT</text>
+        <text x="12" y="173" font-size="11" fill="#1e293b">price</text>
+        <text x="248" y="173" font-size="10" fill="#64748b" text-anchor="end">DECIMAL (10,2)</text>
 
-        <text x="12" y="191" font-size="10" fill="#94a3b8">status</text>
-        <text x="238" y="191" font-size="10" fill="#94a3b8" text-anchor="end">active / archived</text>
+        <text x="12" y="194" font-size="11" font-weight="bold" fill="#047857">stock</text>
+        <text x="248" y="194" font-size="10" fill="#047857" font-weight="bold" text-anchor="end">INT</text>
+
+        <text x="12" y="215" font-size="10" fill="#94a3b8">status</text>
+        <text x="248" y="215" font-size="10" fill="#94a3b8" text-anchor="end">active / archived</text>
       </g>
 
       <!-- STOCK_MOVEMENTS TABLE -->
-      <g transform="translate(100, 275)">
-        <rect width="250" height="165" rx="8" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5" filter="drop-shadow(0 2px 4px rgba(0,0,0,0.06))"/>
-        <rect width="250" height="28" rx="8" fill="url(#headerGrad)"/>
-        <rect y="20" width="250" height="8" fill="url(#headerGrad)"/>
+      <g transform="translate(610, 260)">
+        <rect width="230" height="165" rx="8" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5" filter="drop-shadow(0 2px 4px rgba(0,0,0,0.06))"/>
+        <rect width="230" height="28" rx="8" fill="url(#headerGrad)"/>
+        <rect y="20" width="230" height="8" fill="url(#headerGrad)"/>
         <text x="10" y="19" fill="#ffcad6" font-weight="bold" font-size="12">stock_movements</text>
-        <text x="240" y="18" fill="#e2e8f0" font-size="10" text-anchor="end">Audit Ledger</text>
+        <text x="220" y="18" fill="#e2e8f0" font-size="10" text-anchor="end">Audit Ledger</text>
 
         <text x="12" y="47" font-size="11" font-weight="bold" fill="#6b21a8">🔑 id</text>
-        <text x="238" y="47" font-size="10" fill="#64748b" text-anchor="end">BIGINT (PK)</text>
+        <text x="218" y="47" font-size="10" fill="#64748b" text-anchor="end">BIGINT (PK)</text>
 
         <text x="12" y="68" font-size="11" font-weight="bold" fill="#1e40af">🔗 product_id</text>
-        <text x="238" y="68" font-size="10" fill="#1e40af" font-weight="bold" text-anchor="end">INT NULL (FK)</text>
+        <text x="218" y="68" font-size="10" fill="#1e40af" font-weight="bold" text-anchor="end">INT NULL (FK)</text>
 
-        <text x="12" y="89" font-size="11" fill="#1e293b">product_name</text>
-        <text x="238" y="89" font-size="10" fill="#64748b" text-anchor="end">VARCHAR (Snapshot)</text>
+        <text x="12" y="89" font-size="11" font-weight="bold" fill="#1e40af">🔗 user_id</text>
+        <text x="218" y="89" font-size="10" fill="#1e40af" font-weight="bold" text-anchor="end">INT NULL (FK)</text>
 
         <text x="12" y="110" font-size="11" font-weight="bold" fill="#1e293b">delta (+/-)</text>
-        <text x="238" y="110" font-size="10" fill="#64748b" text-anchor="end">INT</text>
+        <text x="218" y="110" font-size="10" fill="#64748b" text-anchor="end">INT</text>
 
         <text x="12" y="131" font-size="11" fill="#1e293b">type</text>
-        <text x="238" y="131" font-size="10" fill="#64748b" text-anchor="end">VARCHAR (sale/restock)</text>
+        <text x="218" y="131" font-size="10" fill="#64748b" text-anchor="end">VARCHAR (sale/restock)</text>
 
-        <text x="12" y="152" font-size="11" fill="#64748b">recorded_by</text>
-        <text x="238" y="152" font-size="10" fill="#64748b" text-anchor="end">VARCHAR</text>
+        <text x="12" y="152" font-size="10" fill="#94a3b8">created_at</text>
+        <text x="218" y="152" font-size="10" fill="#94a3b8" text-anchor="end">TIMESTAMP</text>
       </g>
 
       <!-- CONNECTOR LINES -->
-      <path d="M 210 75 L 260 75 L 260 98 L 310 98" fill="none" stroke="#382449" stroke-width="2" marker-start="url(#circleOne)" marker-end="url(#crowMany)"/>
-      <rect x="230" y="76" width="60" height="15" fill="#f8fafc" rx="3" stroke="#cbd5e1"/>
-      <text x="260" y="87" font-size="9" font-weight="bold" fill="#382449" text-anchor="middle">1 : N</text>
+      <path d="M 210 75 L 250 75 L 250 98 L 290 98" fill="none" stroke="#382449" stroke-width="2" marker-start="url(#circleOne)" marker-end="url(#crowMany)"/>
+      <rect x="225" y="76" width="50" height="15" fill="#f8fafc" rx="3" stroke="#cbd5e1"/>
+      <text x="250" y="87" font-size="9" font-weight="bold" fill="#382449" text-anchor="middle">1 : N</text>
 
-      <path d="M 520 75 L 570 75 L 570 98 L 620 98" fill="none" stroke="#be185d" stroke-width="2.5" marker-start="url(#circleOne)" marker-end="url(#crowMany)"/>
-      <rect x="540" y="75" width="60" height="15" fill="#fff1f2" rx="3" stroke="#fecdd3"/>
-      <text x="570" y="86" font-size="9" font-weight="bold" fill="#be185d" text-anchor="middle">1 : N (CASCADE)</text>
+      <path d="M 500 75 L 540 75 L 540 98 L 580 98" fill="none" stroke="#be185d" stroke-width="2.5" marker-start="url(#circleOne)" marker-end="url(#crowMany)"/>
+      <rect x="515" y="76" width="50" height="15" fill="#fff1f2" rx="3" stroke="#fecdd3"/>
+      <text x="540" y="87" font-size="9" font-weight="bold" fill="#be185d" text-anchor="middle">1 : N (CASCADE)</text>
 
-      <path d="M 810 305 L 835 305 L 835 120 L 820 120" fill="none" stroke="#1e40af" stroke-width="2" marker-start="url(#circleOne)" marker-end="url(#crowMany)"/>
-      <rect x="800" y="200" width="45" height="15" fill="#eff6ff" rx="3" stroke="#bfdbfe"/>
-      <text x="822" y="211" font-size="9" font-weight="bold" fill="#1e40af" text-anchor="middle">1 : N</text>
+      <path d="M 210 307 L 245 307 L 245 402 L 280 402" fill="none" stroke="#382449" stroke-width="2" marker-start="url(#circleOne)" marker-end="url(#crowMany)"/>
+      <rect x="220" y="345" width="50" height="15" fill="#f8fafc" rx="3" stroke="#cbd5e1"/>
+      <text x="245" y="356" font-size="9" font-weight="bold" fill="#382449" text-anchor="middle">1 : N</text>
 
-      <path d="M 560 305 L 455 305 L 455 342 L 350 342" fill="none" stroke="#382449" stroke-width="2" marker-start="url(#circleOne)" marker-end="url(#crowMany)"/>
-      <rect x="425" y="315" width="60" height="15" fill="#f8fafc" rx="3" stroke="#cbd5e1"/>
-      <text x="455" y="326" font-size="9" font-weight="bold" fill="#382449" text-anchor="middle">1 : N (SET NULL)</text>
+      <path d="M 540 297 L 575 297 L 575 328 L 610 328" fill="none" stroke="#382449" stroke-width="2" marker-start="url(#circleOne)" marker-end="url(#crowMany)"/>
+      <rect x="545" y="300" width="60" height="15" fill="#f8fafc" rx="3" stroke="#cbd5e1"/>
+      <text x="575" y="311" font-size="9" font-weight="bold" fill="#382449" text-anchor="middle">1 : N (SET NULL)</text>
+
+      <path d="M 690 170 L 690 210 L 350 210 L 350 250" fill="none" stroke="#1e40af" stroke-width="2" marker-start="url(#circleOne)" marker-end="url(#crowMany)"/>
+      <rect x="620" y="195" width="50" height="15" fill="#eff6ff" rx="3" stroke="#bfdbfe"/>
+      <text x="645" y="206" font-size="9" font-weight="bold" fill="#1e40af" text-anchor="middle">1 : N</text>
+
+      <path d="M 120 185 L 120 225 L 800 225 L 800 260" fill="none" stroke="#382449" stroke-width="2" marker-start="url(#circleOne)" marker-end="url(#crowMany)"/>
+      <rect x="420" y="216" width="60" height="15" fill="#f8fafc" rx="3" stroke="#cbd5e1"/>
+      <text x="450" y="227" font-size="9" font-weight="bold" fill="#382449" text-anchor="middle">1 : N (SET NULL)</text>
     </svg>
   </div>
 
@@ -449,7 +466,21 @@
         <td><strong><code>stock_movements.product_id</code></strong> <span class="badge-fk">FK</span></td>
         <td>1 : Many (1:N)</td>
         <td><code>SET NULL</code></td>
-        <td>Audit log of all inventory shifts (+restock, -sale, manual edits). Preserves name if deleted.</td>
+        <td>Audit log of all inventory shifts (+restock, -sale, manual edits). Product and staff names are resolved through the foreign keys.</td>
+      </tr>
+      <tr>
+        <td><strong><code>categories.id</code></strong> <span class="badge-pk">PK</span></td>
+        <td><strong><code>products.category_id</code></strong> <span class="badge-fk">FK</span></td>
+        <td>1 : Many (1:N)</td>
+        <td><code>SET NULL</code></td>
+        <td>Groups each product under one normalized category; the old text column is kept only for compatibility.</td>
+      </tr>
+      <tr>
+        <td><strong><code>users.id</code></strong> <span class="badge-pk">PK</span></td>
+        <td><strong><code>stock_movements.user_id</code></strong> <span class="badge-fk">FK</span></td>
+        <td>1 : Many (1:N)</td>
+        <td><code>SET NULL</code></td>
+        <td>Records which staff member performed each stock change; the username is resolved by join.</td>
       </tr>
     </tbody>
   </table>
@@ -487,7 +518,7 @@
     </h3>
     <p><strong>Criteria:</strong> The table must be in 1NF, and all non-key attributes must depend on the <em>entire</em> primary key (no partial functional dependency).</p>
     <ul style="margin-left: 18px; color: #433847; font-size: 12px; margin-bottom: 6px;">
-      <li><strong>Single-Column Primary Keys:</strong> All 5 tables utilize a single-column surrogate primary key (<code>id INT/BIGINT AUTO_INCREMENT PRIMARY KEY</code>).</li>
+      <li><strong>Single-Column Primary Keys:</strong> All 6 tables utilize a single-column surrogate primary key (<code>id INT/BIGINT AUTO_INCREMENT PRIMARY KEY</code>).</li>
       <li><strong>Zero Partial Dependencies:</strong> Because none of the tables use a composite (multi-column) primary key, partial key dependencies are mathematically impossible. Every non-key attribute is fully dependent upon the single primary key <code>id</code>.</li>
     </ul>
   </div>
@@ -500,8 +531,9 @@
     </h3>
     <p><strong>Criteria:</strong> The table must be in 2NF, and no non-key attribute can depend on another non-key attribute ($X \to Y \to Z$). Non-key columns must depend <em>only</em> on the primary key.</p>
     <ul style="margin-left: 18px; color: #433847; font-size: 12px; margin-bottom: 6px;">
-      <li><strong>Independent Entities:</strong> Staff profile attributes (role, status) reside strictly in <code>users</code>; product master data (barcode, price, stock) reside strictly in <code>products</code>.</li>
-      <li><strong>Referential Links Only:</strong> Relational tables store only foreign keys (<code>user_id</code>, <code>sale_id</code>, <code>product_id</code>) rather than repeating vendor or staff details.</li>
+      <li><strong>Independent Entities:</strong> Staff profile attributes (role, status) reside strictly in <code>users</code>; product master data (barcode, price, stock) and categories reside strictly in <code>products</code> and <code>categories</code>.</li>
+      <li><strong>Referential Links Only:</strong> Relational tables store only foreign keys (<code>user_id</code>, <code>sale_id</code>, <code>product_id</code>, <code>category_id</code>) rather than repeating vendor, staff, or category details.</li>
+      <li><strong>Derived Values Are Computed:</strong> Line totals, sale gross, and sale net are calculated from <code>sale_items.qty</code> and <code>sale_items.price</code> when the report is read; no derived column is stored in <code>sales</code> or <code>sale_items</code>.</li>
     </ul>
   </div>
 
@@ -519,13 +551,18 @@
   </div>
 
   <div class="callout">
-    <strong>2. Financial Ledger Immutability &amp; Derived Totals (<code>total</code>, <code>gross</code>, <code>net</code>)</strong><br>
-    In pure academic relational theory, derived attributes ($total = qty \times price$, $net = gross - discount$) can be computed dynamically. However, in production financial systems, pre-computing and persisting totals guarantees rounding precision, prevents historical discrepancies caused by floating-point math, and delivers instant aggregation performance across millions of sales records without scanning every child item.
+    <strong>2. Derived Totals Are Computed, Not Stored (<code>sale_items.qty * sale_items.price</code>)</strong><br>
+    Line totals, sale gross, and sale net are calculated when the report is read, from the stored quantities and prices. There is no stored <code>total</code>, <code>gross</code>, or <code>net</code> column, so a price change in the catalog can never rewrite a past receipt.
   </div>
 
   <div class="callout">
-    <strong>3. Resilient Audit Trail Snapshots (<code>stock_movements.product_name</code>)</strong><br>
-    The <code>stock_movements</code> table uses <code>ON DELETE SET NULL</code> for <code>product_id</code>, while simultaneously retaining <code>product_name</code>. If a discontinued drug is removed from the catalog, the pharmacy's inventory audit trail preserves complete historical clarity regarding what stock arrived and departed.
+    <strong>3. Names Are Resolved Through Relationships (<code>stock_movements</code>)</strong><br>
+    The stock log no longer copies <code>product_name</code> or <code>recorded_by</code>. Each row keeps <code>product_id</code> and <code>user_id</code>, and the current names are read by joining <code>products</code> and <code>users</code>. A deleted product shows as "Deleted item" and a missing user shows as "Unknown user".
+  </div>
+
+  <div class="callout">
+    <strong>4. Legacy Compatibility Field (<code>products.category</code>)</strong><br>
+    The old <code>category</code> text column is kept so older pages keep working. The normalized link is <code>category_id</code> to <code>categories(id)</code>. Once every page reads the foreign key, the text column can be dropped.
   </div>
 
   <!-- SUMMARY FOR DEFENSE -->
@@ -551,12 +588,16 @@
         <td>It is a <em>Point-in-Time Historical Snapshot</em> to protect fiscal records from future price modifications.</td>
       </tr>
       <tr>
-        <td><strong>Why store <code>net</code> and <code>gross</code> in <code>sales</code>?</strong></td>
-        <td>For transaction ledger immutability and high-speed reporting performance.</td>
+        <td><strong>Where do <code>gross</code> and <code>net</code> come from?</strong></td>
+        <td>They are computed from <code>sale_items.qty * sale_items.price</code> when the report is read, so there is one source of truth and no stale totals.</td>
+      </tr>
+      <tr>
+        <td><strong>What happens if a product is deleted?</strong></td>
+        <td>The stock log keeps the movement with <code>product_id</code> set to NULL and shows "Deleted item", so the audit history is never lost.</td>
       </tr>
       <tr>
         <td><strong>How is referential integrity enforced?</strong></td>
-        <td>Via foreign keys with <code>CASCADE</code> (sales &rarr; items), <code>RESTRICT</code> (products &rarr; items), and <code>SET NULL</code> (products &rarr; stock audit).</td>
+        <td>Via foreign keys with <code>CASCADE</code> (sales &rarr; items), <code>RESTRICT</code> (products &rarr; items), <code>SET NULL</code> (products &rarr; stock movements), <code>SET NULL</code> (users &rarr; stock movements), and <code>SET NULL</code> (categories &rarr; products).</td>
       </tr>
     </tbody>
   </table>

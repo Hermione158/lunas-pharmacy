@@ -6,16 +6,17 @@ function isMissingTable(err) {
 }
 
 // `db` is either the pool or a connection inside a transaction.
+// The product and staff names are not copied here: they are read through
+// product_id and user_id when the log is displayed.
 async function recordMovement(db, entry) {
     try {
         await db.query(
-            "INSERT INTO stock_movements (product_id, product_name, delta, type, recorded_by) VALUES (?, ?, ?, ?, ?)",
+            "INSERT INTO stock_movements (product_id, user_id, delta, type) VALUES (?, ?, ?, ?)",
             [
                 entry.productId === undefined ? null : entry.productId,
-                String(entry.name || "").slice(0, 120),
+                entry.userId === undefined ? null : entry.userId,
                 Number(entry.delta) || 0,
-                String(entry.type || "adjust"),
-                String(entry.user || "unknown").slice(0, 64)
+                String(entry.type || "adjust")
             ]
         );
     } catch (err) {

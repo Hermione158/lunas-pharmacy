@@ -109,10 +109,9 @@ async function importCatalog(req, res, session) {
                 if (existing.has(String(row.name))) continue;
                 await recordMovement(getPool(), {
                     productId: row.id,
-                    name: row.name,
                     delta: 0,
                     type: "added",
-                    user: session.username
+                    userId: session.uid
                 });
             }
         }

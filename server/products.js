@@ -64,10 +64,9 @@ async function createProduct(req, res, session) {
         );
         await recordMovement(connection, {
             productId: result.insertId,
-            name: data.name,
             delta: data.stock,
             type: "added",
-            user: session.username
+            userId: session.uid
         });
         await connection.commit();
         return send(res, 201, {

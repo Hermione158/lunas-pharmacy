@@ -81,19 +81,17 @@ async function updateProduct(req, res, id, session) {
         if (statusChanged) {
             await recordMovement(connection, {
                 productId: id,
-                name: next.name,
                 delta: 0,
                 type: next.status === "archived" ? "archive" : "restore",
-                user: session.username
+                userId: session.uid
             });
         }
         if (delta !== 0) {
             await recordMovement(connection, {
                 productId: id,
-                name: next.name,
                 delta: delta,
                 type: delta > 0 ? "restock" : "adjust",
-                user: session.username
+                userId: session.uid
             });
         }
         await connection.commit();
