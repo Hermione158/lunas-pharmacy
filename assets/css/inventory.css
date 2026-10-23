@@ -1331,3 +1331,102 @@ body {
     font-size: 14px;
     min-height: 36px;
 }
+
+/* Update Inventory: readable item names, full barcodes, compact number fields */
+body[data-page="inventory-edit"] #inv-table {
+    table-layout: fixed;
+}
+
+/* Keep the edit table full-width when the page switches to stacked layout */
+body[data-page="inventory-edit"] .inv-table-wrap {
+    width: 100%;
+}
+
+body[data-page="inventory-edit"] #inv-table col.col-item { width: 21%; }
+body[data-page="inventory-edit"] #inv-table col.col-barcode { width: 16%; }
+body[data-page="inventory-edit"] #inv-table col.col-category { width: 17%; }
+body[data-page="inventory-edit"] #inv-table col.col-price { width: 12%; }
+body[data-page="inventory-edit"] #inv-table col.col-stock { width: 9%; }
+body[data-page="inventory-edit"] #inv-table col.col-status { width: 10%; }
+body[data-page="inventory-edit"] #inv-table col.col-actions { width: 15%; }
+
+body[data-page="inventory-edit"] #inv-table th,
+body[data-page="inventory-edit"] #inv-table td {
+    padding-left: 12px;
+    padding-right: 12px;
+}
+
+/* Item names wrap instead of being squeezed out of their cell */
+body[data-page="inventory-edit"] #inv-table .inv-item {
+    min-width: 0;
+}
+
+body[data-page="inventory-edit"] #inv-table .inv-item-locked {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+/* Barcode: use the whole column so 13-digit codes stay visible */
+body[data-page="inventory-edit"] #inv-table .inv-barcode-box {
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+body[data-page="inventory-edit"] #inv-table .barcode-input {
+    flex: 1 1 100%;
+    width: 100%;
+    max-width: none;
+    min-width: 0;
+    font-size: 13px;
+}
+
+/* Price: compact field, peso sign still beside it */
+body[data-page="inventory-edit"] #inv-table .inv-price-box {
+    gap: 3px;
+}
+
+body[data-page="inventory-edit"] #inv-table .inv-price-box .inv-input {
+    flex: 0 0 78px;
+    width: 78px;
+    min-width: 0;
+}
+
+/* Stock: compact centered count */
+body[data-page="inventory-edit"] #inv-table .inv-stock-box {
+    width: auto;
+    max-width: none;
+}
+
+body[data-page="inventory-edit"] #inv-table .inv-stock-box .inv-input {
+    width: 58px;
+    min-width: 58px;
+    padding-left: 6px;
+    padding-right: 6px;
+}
+
+/* Keep the action buttons inside their narrower column */
+body[data-page="inventory-edit"] #inv-table .icon-btn {
+    padding-left: 10px;
+    padding-right: 10px;
+}
+
+@media (max-width: 900px) {
+    body[data-page="inventory-edit"] #inv-table {
+        display: block;
+        table-layout: auto;
+    }
+
+    body[data-page="inventory-edit"] #inv-table colgroup,
+    body[data-page="inventory-edit"] #inv-table thead {
+        display: none;
+    }
+
+    body[data-page="inventory-edit"] #inv-table tbody {
+        display: block;
+    }
+
+    body[data-page="inventory-edit"] #inv-table tbody td {
+        width: 100%;
+    }
+}
+
