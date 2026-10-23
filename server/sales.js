@@ -90,7 +90,7 @@ async function salesSeries(pool, grain, tz, where, params) {
 async function salesByCategory(pool, where, params) {
     const [rows] = await pool.query(
         "SELECT p.category AS category, COALESCE(SUM(si.qty), 0) AS qty, " +
-        "COALESCE(SUM(si.total), 0) AS revenue " +
+        "COALESCE(SUM(si.qty * si.price), 0) AS revenue " +
         "FROM sale_items si JOIN sales s ON s.id = si.sale_id " +
         "JOIN products p ON p.id = si.product_id " + where +
         " GROUP BY p.category ORDER BY revenue DESC",
@@ -275,7 +275,7 @@ async function listSales(req, res) {
     );
 
     const [top] = await pool.query(
-        "SELECT p.id, p.name, SUM(si.qty) AS qty, SUM(si.total) AS revenue FROM sale_items si " +
+        "SELECT p.id, p.name, SUM(si.qty) AS qty, SUM(si.qty * si.price) AS revenue FROM sale_items si " +
         "JOIN sales s ON s.id = si.sale_id JOIN products p ON p.id = si.product_id " + where +
         " GROUP BY p.id, p.name ORDER BY qty DESC, revenue DESC LIMIT 10",
         params
@@ -395,6 +395,9 @@ async function createSale(req, res, session) {
     try {
         await conn.beginTransaction();
 
+        // Some deployments have removed this derived column; older schemas still require it.
+        const [totalColumn] = await conn.query("SHOW COLUMNS FROM sale_items LIKE 'total'");
+        const storesItemTotal = totalColumn.length > 0;
         const items = [];
         let gross = 0;
 
@@ -460,10 +463,17 @@ async function createSale(req, res, session) {
         const saleId = saleResult.insertId;
 
         for (const it of items) {
-            await conn.query(
-                "INSERT INTO sale_items (sale_id, product_id, qty, price, total) VALUES (?, ?, ?, ?, ?)",
-                [saleId, it.id, it.qty, it.price, it.total]
-            );
+            if (storesItemTotal) {
+                await conn.query(
+                    "INSERT INTO sale_items (sale_id, product_id, qty, price, total) VALUES (?, ?, ?, ?, ?)",
+                    [saleId, it.id, it.qty, it.price, it.total]
+                );
+            } else {
+                await conn.query(
+                    "INSERT INTO sale_items (sale_id, product_id, qty, price) VALUES (?, ?, ?, ?)",
+                    [saleId, it.id, it.qty, it.price]
+                );
+            }
             await conn.query("UPDATE products SET stock = stock - ? WHERE id = ?", [it.qty, it.id]);
             await recordMovement(conn, {
                 productId: it.id,
