@@ -30,9 +30,15 @@
     var tbody = table ? table.querySelector("tbody") : null;
     var search = document.getElementById("inv-search");
     var chipsBox = document.getElementById("inv-chips");
+    var showMoreBtn = document.getElementById("show-more-btn");
     var activeCat = "All";
     var statusFilter = "active";
     var stockFilter = "all";
+
+    // The view page only shows this many matching rows at once; the rest are
+    // revealed with the Show all button in the toolbar.
+    var SHOW_LIMIT = 10;
+    var expanded = false;
 
     // Pictures attached to a new row, kept next to the row until it is saved.
     var rowImages = new WeakMap();
@@ -274,8 +280,17 @@
         });
     }
 
+    // Re-applies the search/category/stock filters and caps the view page at
+    // SHOW_LIMIT rows. Any filter change starts collapsed again.
     function applyFilters() {
+        expanded = false;
+        renderVisibleRows();
+    }
+
+    function renderVisibleRows() {
         var term = (search ? search.value : "").trim().toLowerCase();
+        var limit = page === "inventory-edit" ? Infinity : SHOW_LIMIT;
+        var matched = 0;
         var visible = 0;
         table.querySelectorAll("tbody tr").forEach(function (row) {
             var text = row.textContent.toLowerCase();
@@ -290,9 +305,11 @@
             var showStock = stockFilter === "all" ||
                 (stockFilter === "low" && stock > 0 && stock < Api.LOW_STOCK) ||
                 (stockFilter === "out" && stock <= 0);
-            var show = (!term || text.indexOf(term) !== -1) &&
+            var matches = (!term || text.indexOf(term) !== -1) &&
                 (activeCat === "All" || cat === activeCat) &&
                 showStock;
+            if (matches) matched++;
+            var show = matches && (expanded || visible < limit);
             row.style.display = show ? "" : "none";
             if (show) visible++;
         });
@@ -300,6 +317,18 @@
         var empty = document.getElementById("no-results");
         if (empty) {
             empty.style.display = visible === 0 ? "block" : "none";
+        }
+
+        if (showMoreBtn) {
+            var hiddenCount = matched - limit;
+            if (hiddenCount > 0) {
+                showMoreBtn.style.display = "";
+                showMoreBtn.textContent = expanded
+                    ? "Show less"
+                    : "Show all (" + hiddenCount + " more)";
+            } else {
+                showMoreBtn.style.display = "none";
+            }
         }
     }
 
@@ -334,6 +363,20 @@
                 chip.classList.add("active");
                 applyFilters();
             });
+        });
+    }
+
+    // --- Show all / Show less (view page) ---
+    if (showMoreBtn) {
+        showMoreBtn.addEventListener("click", function () {
+            expanded = !expanded;
+            renderVisibleRows();
+            if (!expanded) {
+                var top = document.getElementById("current-inventory");
+                if (top && top.scrollIntoView) {
+                    top.scrollIntoView({ behavior: "smooth", block: "start" });
+                }
+            }
         });
     }
 
