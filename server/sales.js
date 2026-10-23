@@ -295,14 +295,14 @@ async function listSales(req, res) {
         if (rows.length) {
             const ids = rows.map(function (r) { return r.id; });
             const [itemRows] = await pool.query(
-                "SELECT si.sale_id, si.qty, p.name FROM sale_items si JOIN products p ON p.id = si.product_id " +
+                "SELECT si.sale_id, si.qty, si.price, p.name FROM sale_items si JOIN products p ON p.id = si.product_id " +
                 "WHERE si.sale_id IN (" + ids.map(function () { return "?"; }).join(", ") + ") ORDER BY si.id",
                 ids
             );
             const bySale = {};
             itemRows.forEach(function (r) {
                 const list = bySale[r.sale_id] || (bySale[r.sale_id] = []);
-                list.push({ name: String(r.name), qty: Number(r.qty) });
+                list.push({ name: String(r.name), qty: Number(r.qty), total: round2(Number(r.qty) * Number(r.price)) });
             });
             rows.forEach(function (r) { r.items = bySale[r.id] || []; });
         }
