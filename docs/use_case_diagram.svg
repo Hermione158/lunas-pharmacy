@@ -1,0 +1,137 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1320 900" width="1320" height="900" font-family="Segoe UI, Arial, sans-serif">
+  <defs>
+    <marker id="dashArrow" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#64748b"/>
+    </marker>
+  </defs>
+
+  <rect width="1320" height="900" fill="#ffffff"/>
+
+  <!-- System boundary -->
+  <rect x="260" y="40" width="780" height="820" rx="18" fill="#fbfcfe" stroke="#94a3b8" stroke-width="2"/>
+  <text x="280" y="70" font-size="15" font-weight="bold" fill="#334155">Luna's Pharmacy POS &amp; Inventory System</text>
+
+  <!-- ================= CASHIER ACTOR ================= -->
+  <g stroke="#334155" stroke-width="2" fill="none">
+    <circle cx="90" cy="330" r="16" fill="#ffffff"/>
+    <line x1="90" y1="346" x2="90" y2="392"/>
+    <line x1="60" y1="360" x2="120" y2="360"/>
+    <line x1="90" y1="392" x2="68" y2="425"/>
+    <line x1="90" y1="392" x2="112" y2="425"/>
+  </g>
+  <text x="90" y="452" text-anchor="middle" font-size="14" font-weight="bold" fill="#1e293b">Cashier</text>
+
+  <!-- ================= ADMIN ACTOR ================= -->
+  <g stroke="#334155" stroke-width="2" fill="none">
+    <circle cx="1230" cy="400" r="16" fill="#ffffff"/>
+    <line x1="1230" y1="416" x2="1230" y2="462"/>
+    <line x1="1200" y1="430" x2="1260" y2="430"/>
+    <line x1="1230" y1="462" x2="1208" y2="495"/>
+    <line x1="1230" y1="462" x2="1252" y2="495"/>
+  </g>
+  <text x="1230" y="522" text-anchor="middle" font-size="14" font-weight="bold" fill="#1e293b">Admin</text>
+
+  <!-- ================= CASHIER USE CASES ================= -->
+  <g fill="#eef2ff" stroke="#6366f1" stroke-width="2">
+    <ellipse cx="430" cy="110" rx="100" ry="34"/>
+    <ellipse cx="430" cy="250" rx="100" ry="34"/>
+    <ellipse cx="430" cy="380" rx="100" ry="34"/>
+    <ellipse cx="430" cy="510" rx="100" ry="34"/>
+  </g>
+  <g fill="#312e81" text-anchor="middle" font-size="13" font-weight="600">
+    <text x="430" y="115">Log In</text>
+    <text x="430" y="245">Browse / Search</text>
+    <text x="430" y="262">Products</text>
+    <text x="430" y="385">Complete Sale</text>
+    <text x="430" y="515">View Receipt</text>
+  </g>
+
+  <!-- ================= INTERNAL / INCLUDED USE CASES ================= -->
+  <g fill="#ecfdf5" stroke="#10b981" stroke-width="2">
+    <ellipse cx="670" cy="250" rx="100" ry="34" fill="#eef2ff" stroke="#6366f1"/>
+    <ellipse cx="670" cy="380" rx="100" ry="34"/>
+    <ellipse cx="670" cy="510" rx="100" ry="34"/>
+    <ellipse cx="670" cy="710" rx="100" ry="34" fill="#fff7ed" stroke="#f59e0b"/>
+  </g>
+  <g fill="#065f46" text-anchor="middle" font-size="13" font-weight="600">
+    <text x="670" y="255" fill="#312e81">Apply Discount</text>
+    <text x="670" y="375">Verify Stock</text>
+    <text x="670" y="392">&amp; Deduct</text>
+    <text x="670" y="505">Record Stock</text>
+    <text x="670" y="522">Movement</text>
+    <text x="670" y="705" fill="#7c2d12">Export Report</text>
+    <text x="670" y="722" fill="#7c2d12">to CSV</text>
+  </g>
+
+  <!-- ================= ADMIN USE CASES ================= -->
+  <g fill="#fff7ed" stroke="#f59e0b" stroke-width="2">
+    <ellipse cx="900" cy="110" rx="100" ry="34"/>
+    <ellipse cx="900" cy="210" rx="100" ry="34"/>
+    <ellipse cx="900" cy="310" rx="100" ry="34"/>
+    <ellipse cx="900" cy="410" rx="100" ry="34"/>
+    <ellipse cx="900" cy="510" rx="100" ry="34"/>
+    <ellipse cx="900" cy="610" rx="100" ry="34"/>
+    <ellipse cx="900" cy="810" rx="100" ry="34"/>
+  </g>
+  <g fill="#7c2d12" text-anchor="middle" font-size="13" font-weight="600">
+    <text x="900" y="105">Manage Products</text>
+    <text x="900" y="122">(Add / Edit / Archive)</text>
+    <text x="900" y="215">Update Stock</text>
+    <text x="900" y="305">Bulk Update</text>
+    <text x="900" y="322">Inventory</text>
+    <text x="900" y="405">Maintain</text>
+    <text x="900" y="422">Categories</text>
+    <text x="900" y="515">View Stock Log</text>
+    <text x="900" y="605">Generate Sales</text>
+    <text x="900" y="622">Reports</text>
+    <text x="900" y="815">Manage Accounts</text>
+  </g>
+
+  <!-- ================= CASHIER ASSOCIATIONS ================= -->
+  <g stroke="#475569" stroke-width="1.6" fill="none">
+    <line x1="120" y1="360" x2="210" y2="360"/>
+    <line x1="210" y1="110" x2="210" y2="510"/>
+    <line x1="210" y1="110" x2="330" y2="110"/>
+    <line x1="210" y1="250" x2="330" y2="250"/>
+    <line x1="210" y1="380" x2="330" y2="380"/>
+    <line x1="210" y1="510" x2="330" y2="510"/>
+  </g>
+
+  <!-- ================= ADMIN ASSOCIATIONS ================= -->
+  <g stroke="#475569" stroke-width="1.6" fill="none">
+    <line x1="1260" y1="430" x2="1120" y2="430"/>
+    <line x1="1120" y1="110" x2="1120" y2="810"/>
+    <line x1="1120" y1="110" x2="1000" y2="110"/>
+    <line x1="1120" y1="210" x2="1000" y2="210"/>
+    <line x1="1120" y1="310" x2="1000" y2="310"/>
+    <line x1="1120" y1="410" x2="1000" y2="410"/>
+    <line x1="1120" y1="510" x2="1000" y2="510"/>
+    <line x1="1120" y1="610" x2="1000" y2="610"/>
+    <line x1="1120" y1="810" x2="1000" y2="810"/>
+  </g>
+
+  <!-- ================= INCLUDE / EXTEND RELATIONSHIPS ================= -->
+  <g stroke="#64748b" stroke-width="1.6" fill="none" stroke-dasharray="6 4" marker-end="url(#dashArrow)">
+    <!-- Complete Sale includes Verify Stock & Deduct -->
+    <line x1="530" y1="380" x2="566" y2="380"/>
+    <!-- Complete Sale includes Record Stock Movement -->
+    <line x1="492" y1="410" x2="612" y2="480"/>
+    <!-- Update Stock includes Record Stock Movement -->
+    <line x1="822" y1="238" x2="730" y2="480"/>
+    <!-- Apply Discount extends Complete Sale -->
+    <line x1="588" y1="268" x2="502" y2="352"/>
+    <!-- Export CSV extends Generate Sales Reports -->
+    <line x1="735" y1="686" x2="806" y2="626"/>
+  </g>
+  <g fill="#475569" font-size="10" font-style="italic" text-anchor="middle">
+    <text x="548" y="370">&#171;include&#187;</text>
+    <text x="548" y="443">&#171;include&#187;</text>
+    <text x="786" y="360">&#171;include&#187;</text>
+    <text x="548" y="305">&#171;extend&#187;</text>
+    <text x="772" y="650">&#171;extend&#187;</text>
+  </g>
+
+  <!-- Note -->
+  <text x="280" y="838" font-size="11" font-style="italic" fill="#64748b">Note: the Admin can also perform every Cashier use case.</text>
+  <text x="260" y="884" font-size="11" fill="#64748b">Dashed arrows: &#171;include&#187; = always part of the base use case; &#171;extend&#187; = optional or conditional.</text>
+</svg>
